@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { clearAllCache } from './cache';
 
 interface User {
   id: string;
@@ -187,6 +188,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      // Clear API cache on logout
+      clearAllCache();
     }
   };
 

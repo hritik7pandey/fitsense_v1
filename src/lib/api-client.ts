@@ -2,8 +2,38 @@
 
 import { useAuth } from './auth-context';
 import { useCallback, useMemo } from 'react';
+import { getCached, setCache, dedupeRequest, CacheOptions } from './cache';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+// Endpoints that should be cached (GET requests only)
+const CACHEABLE_ENDPOINTS = [
+  '/api/v1/admin/stats',
+  '/api/v1/membership/plans',
+  '/api/v1/membership/my-membership',
+  '/api/v1/workouts/my-workouts',
+  '/api/v1/diets/my-diets',
+  '/api/v1/admin/members',
+  '/api/v1/notifications',
+];
+
+// Cache durations for specific endpoints (in ms)
+const CACHE_DURATIONS: Record<string, number> = {
+  '/api/v1/membership/plans': 5 * 60 * 1000, // 5 minutes - plans rarely change
+  '/api/v1/admin/stats': 30 * 1000, // 30 seconds - stats update frequently
+  '/api/v1/membership/my-membership': 60 * 1000, // 1 minute
+};
+
+function shouldCache(endpoint: string): boolean {
+  return CACHEABLE_ENDPOINTS.some(e => endpoint.startsWith(e));
+}
+
+function getCacheDuration(endpoint: string): number {
+  for (const [key, duration] of Object.entries(CACHE_DURATIONS)) {
+    if (endpoint.startsWith(key)) return duration;
+  }
+  return 30 * 1000; // Default 30 seconds
+}
 
 interface FetchOptions extends RequestInit {
   skipAuth?: boolean;
@@ -127,7 +157,30 @@ const handleResponse = async (response: Response) => {
   return response.json();
 };
 
-const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
+const makeRequest = async (endpoint: string, options: RequestInit = {}, cacheOptions?: CacheOptions) => {
+  const method = options.method || 'GET';
+  const cacheKey = cacheOptions?.cacheKey || endpoint;
+  
+  // Only cache GET requests
+  if (method === 'GET' && shouldCache(endpoint) && !cacheOptions?.forceRefresh) {
+    const { data: cachedData, isStale } = getCached(cacheKey);
+    
+    if (cachedData && !isStale) {
+      return cachedData; // Return fresh cached data
+    }
+    
+    // Dedupe concurrent requests
+    return dedupeRequest(cacheKey, async () => {
+      const result = await executeRequest(endpoint, options);
+      setCache(cacheKey, result, cacheOptions?.cacheDuration || getCacheDuration(endpoint));
+      return result;
+    });
+  }
+  
+  return executeRequest(endpoint, options);
+};
+
+const executeRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -176,7 +229,8 @@ const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
 };
 
 export const apiClient = {
-  get: (endpoint: string) => makeRequest(endpoint, { method: 'GET' }),
+  get: (endpoint: string, cacheOptions?: CacheOptions) => 
+    makeRequest(endpoint, { method: 'GET' }, cacheOptions),
   
   post: (endpoint: string, data?: unknown) => makeRequest(endpoint, {
     method: 'POST',
@@ -194,4 +248,10 @@ export const apiClient = {
   }),
   
   delete: (endpoint: string) => makeRequest(endpoint, { method: 'DELETE' }),
+  
+  /** Force refresh bypassing cache */
+  refresh: (endpoint: string) => makeRequest(endpoint, { method: 'GET' }, { forceRefresh: true }),
 };
+
+// Re-export cache utilities for manual cache management
+export { invalidateCache, clearAllCache, prefetch } from './cache';
