@@ -9,11 +9,11 @@
   --font-inter: 'Inter', sans-serif;
   --font-outfit: 'Outfit', sans-serif;
   
-  /* Enhanced color palette */
+  /* Enhanced color palette - Higher contrast */
   --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.70);
-  --text-tertiary: rgba(255, 255, 255, 0.50);
-  --text-muted: rgba(255, 255, 255, 0.35);
+  --text-secondary: rgba(255, 255, 255, 0.80);
+  --text-tertiary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.50);
 }
 
 * {
@@ -54,30 +54,63 @@
   .backdrop-blur-xl,
   .backdrop-blur-2xl,
   .backdrop-blur-3xl {
-    backdrop-filter: blur(16px) saturate(120%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
   }
   .backdrop-blur-lg {
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
   }
+  .backdrop-blur-md {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+  
+  /* Disable saturate on mobile for performance */
+  .backdrop-saturate-150,
+  .backdrop-saturate-200 {
+    backdrop-filter: none !important;
+  }
+  
   /* Reduce background blur for ambient effects */
   .blur-\\[150px\\],
   .blur-\\[120px\\],
   .blur-\\[100px\\],
   .blur-3xl {
-    filter: blur(50px) !important;
+    filter: blur(40px) !important;
+    opacity: 0.7;
   }
   .blur-2xl {
-    filter: blur(30px) !important;
+    filter: blur(25px) !important;
   }
   .blur-xl {
-    filter: blur(20px) !important;
+    filter: blur(15px) !important;
   }
+  
   /* Reduce shadow complexity on mobile */
   .shadow-2xl,
   .shadow-xl {
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25) !important;
+  }
+  .shadow-lg {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important;
+  }
+  
+  /* Simplify gradients on mobile */
+  .bg-gradient-to-br,
+  .bg-gradient-to-r {
+    background-size: 100% 100% !important;
+  }
+  
+  /* Reduce animation complexity */
+  .animate-pulse {
+    animation: pulse 3s ease-in-out infinite !important;
+  }
+  
+  /* Disable complex transforms on scroll */
+  .transform-gpu {
+    transform: translateZ(0);
+    will-change: auto !important;
   }
 }
 
@@ -420,4 +453,158 @@ p {
     padding-left: 1rem;
     padding-right: 1rem;
   }
+}
+
+
+/* Global text contrast improvements */
+.text-white\/40 {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.text-white\/50 {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.text-white\/60 {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.text-white\/70 {
+  color: rgba(255, 255, 255, 0.80) !important;
+}
+
+/* Small text should be more visible */
+.text-xs, .text-\[10px\], .text-\[9px\] {
+  color: inherit;
+  font-weight: 500;
+}
+
+/* Ensure labels and captions are readable */
+label, .label {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Better placeholder contrast */
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+
+/* ===== MOBILE PERFORMANCE OPTIMIZATIONS ===== */
+
+/* Reduce motion for better performance */
+@media (max-width: 768px) {
+  /* Faster transitions on mobile */
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform {
+    transition-duration: 150ms !important;
+  }
+  
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    .hover\:scale-105:hover,
+    .hover\:scale-110:hover {
+      transform: none !important;
+    }
+    .group:hover .group-hover\:scale-105 {
+      transform: none !important;
+    }
+  }
+  
+  /* Optimize images */
+  img {
+    content-visibility: auto;
+  }
+  
+  /* Reduce paint areas */
+  .fixed {
+    contain: layout style;
+  }
+  
+  /* Hardware acceleration for smooth scrolling */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto;
+  }
+}
+
+/* Very low-end device optimizations */
+@media (max-width: 480px) {
+  /* Further reduce blur */
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl,
+  .backdrop-blur-3xl,
+  .backdrop-blur-lg {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  
+  /* Simplify ambient effects */
+  .blur-\\[150px\\],
+  .blur-\\[120px\\],
+  .blur-\\[100px\\],
+  .blur-3xl,
+  .blur-2xl {
+    display: none !important;
+  }
+  
+  /* Reduce animation frames */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  /* Simpler shadows */
+  [class*="shadow-"] {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  }
+}
+
+/* Optimize framer-motion on mobile */
+@media (max-width: 768px) {
+  [style*="transform"] {
+    will-change: auto !important;
+  }
+}
+
+/* Battery saver - reduce animations when low power mode */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-spin,
+  .animate-pulse,
+  .animate-bounce {
+    animation: none !important;
+  }
+}
+
+/* Optimize video on mobile */
+@media (max-width: 768px) {
+  video {
+    will-change: auto;
+  }
+}
+
+/* Content visibility for off-screen elements */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Lazy render sections */
+section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
 }

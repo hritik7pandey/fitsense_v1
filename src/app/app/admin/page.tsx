@@ -731,20 +731,6 @@ export default function AdminDashboardPage() {
               <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
               <p className="text-sm text-white/50">Manage your fitness center</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowAnnouncementModal(true)}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30"
-              >
-                <Megaphone size={20} className="text-white" />
-              </button>
-              <button
-                onClick={() => router.push('/app/admin/members')}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center shadow-lg shadow-accent-purple/30"
-              >
-                <UserPlus size={20} className="text-white" />
-              </button>
-            </div>
           </div>
         </motion.div>
       </div>

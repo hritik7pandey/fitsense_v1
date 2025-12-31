@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Dumbbell, Calendar, User, CreditCard, LayoutDashboard, Users, FileBarChart, Utensils, LogOut, Bell, Megaphone, Image } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -19,9 +20,9 @@ interface NavItem {
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=User&background=FA3419&color=fff';
 
 // Memoized nav button for performance - Clean dark style
-const NavButton = memo(({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
+const NavButton = memo(({ item, isActive }: { item: NavItem; isActive: boolean }) => (
+  <Link
+    href={item.path}
     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
       isActive
         ? 'bg-white/10 shadow-lg'
@@ -30,29 +31,25 @@ const NavButton = memo(({ item, isActive, onClick }: { item: NavItem; isActive: 
   >
     <item.icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? item.color : 'text-white/40'} />
     <span className={`font-medium text-sm ${isActive ? 'text-white' : ''}`}>{item.label}</span>
-  </button>
+  </Link>
 ));
 NavButton.displayName = 'NavButton';
 
-// Memoized mobile nav button - Liquid Glass Style with Colors
-const MobileNavButton = memo(({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="relative flex flex-col items-center justify-center flex-1 py-1 transition-all duration-200"
+// Memoized mobile nav button - Optimized for performance
+const MobileNavButton = memo(({ item, isActive }: { item: NavItem; isActive: boolean }) => (
+  <Link
+    href={item.path}
+    className="relative flex flex-col items-center justify-center flex-1 py-1"
   >
-    {/* Active glass pill background */}
+    {/* Active indicator - simplified for mobile performance */}
     {isActive && (
-      <motion.div
-        layoutId="activePill"
-        className="absolute inset-x-1 inset-y-0 bg-white/[0.1] backdrop-blur-xl rounded-xl border border-white/[0.12]"
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      />
+      <div className="absolute inset-x-1 inset-y-0 bg-white/[0.1] rounded-xl border border-white/[0.12]" />
     )}
     <div className={`relative z-10 flex flex-col items-center gap-0.5 transition-all duration-200 ${isActive ? 'scale-105' : ''}`}>
       <item.icon size={20} strokeWidth={isActive ? 2.5 : 1.5} className={isActive ? item.color : 'text-white/35'} />
       <span className={`text-[9px] font-semibold tracking-wide ${isActive ? 'text-white' : 'text-white/35'}`}>{item.label}</span>
     </div>
-  </button>
+  </Link>
 ));
 MobileNavButton.displayName = 'MobileNavButton';
 
@@ -89,10 +86,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     await logout();
     router.push('/login');
   }, [logout, router]);
-
-  const handleNavClick = useCallback((path: string) => {
-    router.push(path);
-  }, [router]);
 
   const isPathActive = useCallback((itemPath: string) => {
     return itemPath === '/app/admin' || itemPath === '/app/home'
@@ -132,24 +125,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* DESKTOP SIDEBAR - Seamless Dark */}
       <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-[#0a0a12]">
         
-        {/* Logo Section */}
-        <div className="relative p-5 flex items-center gap-3">
+        {/* Logo Section - Links to landing page */}
+        <Link href="/" className="relative p-5 flex items-center gap-3 hover:bg-white/[0.03] transition-colors">
           <div className="relative overflow-hidden rounded-xl w-12 h-12 flex-shrink-0">
             <div className="absolute inset-0 bg-gradient-to-br from-accent-blue/40 to-accent-gold/30 blur-xl pointer-events-none" style={{ transform: 'scale(1.5)' }} />
             <img src="/logo.png" alt="FitSense Logo" className="relative w-full h-full object-cover drop-shadow-[0_0_12px_rgba(250,52,25,0.5)]" style={{ filter: 'brightness(1.2) contrast(1.15) saturate(1.2)', transform: 'scale(1.35)' }} />
           </div>
           <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white via-white/95 to-accent-gold/90 bg-clip-text text-transparent">FitSense</span>
-        </div>
+        </Link>
         
         {/* Visit Website Button */}
         <div className="relative px-4 py-2">
-          <button
-            onClick={() => router.push('/')}
+          <Link
+            href="/"
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white/70 text-xs font-medium transition-all duration-200"
           >
             <Home size={14} className="text-blue-400/60" />
             <span>Visit Website</span>
-          </button>
+          </Link>
         </div>
 
         {/* Navigation */}
@@ -159,7 +152,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               key={item.id}
               item={item}
               isActive={isPathActive(item.path)}
-              onClick={() => handleNavClick(item.path)}
             />
           ))}
         </nav>
@@ -182,12 +174,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Top highlight */}
           <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
           
-          <button onClick={() => router.push('/app/home')} className="relative flex items-center gap-2.5">
+          <Link href="/" className="relative flex items-center gap-2.5">
             <div className="relative overflow-hidden rounded-xl w-10 h-10">
               <img src="/logo.png" alt="FitSense Logo" className="w-full h-full object-cover drop-shadow-[0_0_12px_rgba(250,52,25,0.4)]" style={{ filter: 'brightness(1.2) contrast(1.15)', transform: 'scale(1.35)' }} />
             </div>
             <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-white/85 bg-clip-text text-transparent">FitSense</span>
-          </button>
+          </Link>
           <div className="relative flex items-center gap-3">
             <button onClick={() => router.push('/')} className="text-white/50 hover:text-white transition-colors duration-150 text-xs px-2 py-1.5 border border-white/15 rounded-lg font-medium bg-white/[0.03]">
               Website
@@ -262,7 +254,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   key={item.id}
                   item={item}
                   isActive={isPathActive(item.path)}
-                  onClick={() => handleNavClick(item.path)}
                 />
               ))}
             </div>

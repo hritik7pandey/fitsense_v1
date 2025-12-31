@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Menu, X, LayoutDashboard, Phone, MapPin, MessageCircle } from 'lucide-react';
 
 export function WebsiteLayout({ children }: { children: React.ReactNode }) {
@@ -52,31 +53,34 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-primary text-white selection:bg-accent-gold/30">
-      {/* Navigation - Premium frosted glass effect */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-gradient-to-b from-black/50 via-black/30 to-transparent border-b border-white/[0.06] shadow-2xl shadow-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between">
-          <button onClick={() => router.push('/')} className="flex items-center gap-3 hover:opacity-90 transition-opacity duration-200">
-            <div className="relative overflow-hidden rounded-xl w-12 h-12 sm:w-14 sm:h-14">
+      {/* Navigation - Premium floating translucent glass */}
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl">
+        <div className="relative backdrop-blur-2xl backdrop-saturate-150 bg-black/30 border border-white/[0.1] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-4 sm:px-6 h-16 flex items-center justify-between overflow-hidden">
+          {/* Inner glow highlight */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+          
+          <Link href="/" className="relative flex items-center gap-3 hover:opacity-90 transition-opacity duration-200">
+            <div className="relative overflow-hidden rounded-xl w-10 h-10 sm:w-11 sm:h-11">
               <div className="absolute inset-0 bg-gradient-to-br from-accent-blue/30 to-accent-gold/20 blur-xl pointer-events-none" style={{ transform: 'scale(1.4)' }} />
               <img src="/logo.png" alt="FitSense Logo" className="relative w-full h-full object-cover drop-shadow-[0_0_15px_rgba(250,52,25,0.4)]" style={{ filter: 'brightness(1.2) contrast(1.15)', transform: 'scale(1.35)' }} />
             </div>
-            <span className="font-bold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-white/95 to-accent-gold/90 bg-clip-text text-transparent">FitSense</span>
-          </button>
+            <span className="font-bold text-lg sm:text-xl tracking-tight text-white drop-shadow-sm">FitSense</span>
+          </Link>
           
-          {/* Desktop Navigation - Elegant pill style */}
-          <div className="hidden md:flex items-center gap-1 text-sm font-semibold">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1 text-sm font-semibold relative">
             {navLinks.map((link) => (
               <button
                 key={link.href}
                 onClick={() => router.push(link.href)}
-                className="px-4 py-2 rounded-full text-white/60 hover:text-white hover:bg-white/[0.08] transition-all duration-150"
+                className="px-4 py-2 rounded-full text-white/90 hover:text-white hover:bg-white/[0.1] transition-all duration-150 font-medium"
               >
                 {link.label}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="relative flex items-center gap-3">
             {isLoggedIn ? (
               <button 
                 onClick={handleGoToDashboard} 
@@ -89,7 +93,7 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
               <>
                 <button 
                   onClick={() => router.push('/login')} 
-                  className="hidden sm:block text-sm font-semibold text-white/70 hover:text-white px-4 py-2 rounded-full hover:bg-white/[0.08] transition-all duration-150"
+                  className="hidden sm:block text-sm font-semibold text-white/90 hover:text-white px-4 py-2 rounded-full hover:bg-white/[0.1] transition-all duration-150"
                 >
                   Log In
                 </button>
@@ -105,16 +109,16 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-white/70 hover:text-white hover:bg-white/[0.08] rounded-full transition-colors duration-150"
+              className="md:hidden p-2 text-white/90 hover:text-white hover:bg-white/[0.1] rounded-full transition-colors duration-150"
             >
               {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu - Elegant frosted dropdown */}
+        {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black/80 backdrop-blur-xl border-b border-white/[0.08] shadow-xl">
+          <div className="md:hidden mt-2 backdrop-blur-2xl backdrop-saturate-150 bg-black/30 border border-white/[0.1] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
             <div className="px-4 py-4 space-y-1">
               {navLinks.map((link) => (
                 <button
@@ -123,12 +127,12 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
                     router.push(link.href);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.08] transition-all duration-150 text-base font-medium"
+                  className="block w-full text-left px-4 py-3 rounded-xl text-white/90 hover:text-white hover:bg-white/[0.1] transition-all duration-150 text-base font-medium"
                 >
                   {link.label}
                 </button>
               ))}
-              <div className="pt-2 mt-2 border-t border-white/[0.08]">
+              <div className="pt-2 mt-2 border-t border-white/[0.1]">
                 {isLoggedIn ? (
                   <button
                     onClick={() => {
@@ -146,7 +150,7 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
                       router.push('/login');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.08] transition-all duration-150 text-base font-medium"
+                    className="block w-full text-left px-4 py-3 rounded-xl text-white/90 hover:text-white hover:bg-white/[0.1] transition-all duration-150 text-base font-medium"
                   >
                     Log In
                   </button>
@@ -157,7 +161,7 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
         )}
       </nav>
 
-      <main className="pt-16 sm:pt-18">
+      <main className="">
         {children}
       </main>
 
@@ -165,13 +169,13 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-white/[0.06] bg-gradient-to-b from-transparent to-black/40 pt-16 pb-8 mt-20">
          <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-12">
             <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-3 mb-4">
+              <Link href="/" className="flex items-center gap-3 mb-4 hover:opacity-90 transition-opacity">
                 <div className="relative overflow-hidden rounded-xl w-12 h-12">
                   <div className="absolute inset-0 bg-gradient-to-br from-accent-blue/25 to-accent-gold/15 blur-lg pointer-events-none" style={{ transform: 'scale(1.3)' }} />
                   <img src="/logo.png" alt="FitSense Logo" className="relative w-full h-full object-cover drop-shadow-[0_0_10px_rgba(250,52,25,0.3)]" style={{ filter: 'brightness(1.2) contrast(1.15)', transform: 'scale(1.35)' }} />
                 </div>
                 <h4 className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">FitSense</h4>
-              </div>
+              </Link>
               <p className="text-accent-gold/90 text-sm font-semibold mb-2">Where Fitness Becomes a Lifestyle</p>
               <p className="text-white/40 text-sm leading-relaxed font-medium">Train Smart • Live Strong • Feel Elite</p>
             </div>

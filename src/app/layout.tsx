@@ -21,7 +21,11 @@ export const metadata: Metadata = {
   keywords: ['fitness', 'gym', 'workout', 'diet', 'AI', 'health'],
   authors: [{ name: 'FitSense Team' }],
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    apple: '/logo.png',
   },
   manifest: '/manifest.json',
 };

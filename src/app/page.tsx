@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { WebsiteLayout } from '@/components/layouts/WebsiteLayout';
 import { GlassButton } from '@/components/ui';
 import { motion } from 'framer-motion';
-import { CheckCircle, Zap, TrendingUp, Users, Award, ArrowRight, Star, Clock, Target, Sparkles, Play, Shield, Loader2 } from 'lucide-react';
+import { CheckCircle, Zap, TrendingUp, Users, Award, ArrowRight, Target, Play, Shield, Loader2 } from 'lucide-react';
 import { BannerDisplay } from '@/components/ui/BannerDisplay';
 import { FullScreenAd } from '@/components/ui/FullScreenAd';
 
@@ -59,44 +59,29 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          {/* Video Background */}
+          {/* Video Background - optimized for mobile */}
           <video 
             autoPlay 
             muted 
             loop 
             playsInline
-            preload="metadata"
-            className="absolute inset-0 w-full h-full object-cover will-change-auto"
+            preload="none"
+            poster="/gym-bg.jpg"
+            className="absolute inset-0 w-full h-full object-cover"
             style={{ filter: 'brightness(0.25)' }}
           >
             <source src="/gym_video.mp4" type="video/mp4" />
           </video>
           {/* Gradient Overlay for better text readability */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-primary z-10 pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent-blue/5 via-transparent to-transparent z-10 pointer-events-none" />
-          {/* Static glow effects */}
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-accent-blue/10 rounded-full blur-[120px] z-10 pointer-events-none" />
-          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent-gold/8 rounded-full blur-[120px] z-10 pointer-events-none" />
+          {/* Glow effects - hidden on mobile for performance */}
+          <div className="hidden sm:block absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-accent-blue/10 rounded-full blur-[80px] z-10 pointer-events-none" />
+          <div className="hidden sm:block absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-accent-gold/8 rounded-full blur-[80px] z-10 pointer-events-none" />
         </div>
 
         <div className="relative z-20 max-w-6xl mx-auto text-center px-6 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-accent-blue/40 bg-black/50 backdrop-blur-xl mb-8"
-            >
-              <Sparkles size={16} className="text-accent-gold" />
-              <span className="text-accent-gold text-sm font-semibold">AI-Powered Fitness Platform</span>
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            </motion.div>
-            
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 tracking-tight leading-[1.05] drop-shadow-2xl">
+          <div>
+            <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-6 sm:mb-8 tracking-tight leading-[1.05] drop-shadow-2xl">
               Where Fitness
               <br />
               <span className="relative">
@@ -161,7 +146,7 @@ export default function HomePage() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Scroll Indicator */}

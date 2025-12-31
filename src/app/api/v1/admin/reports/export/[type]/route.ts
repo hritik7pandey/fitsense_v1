@@ -40,9 +40,11 @@ export async function GET(
         let queryText = `
           SELECT 
             u.name, u.email, u.phone, u.gender, u.age,
-            m.status as membership_status, 
+            u."isBlocked" as user_blocked,
+            m.status as membership_status,
+            m."endDate",
             p.name as plan_name,
-            m."startDate", m."endDate",
+            m."startDate",
             u."createdAt"
           FROM users u
           LEFT JOIN memberships m ON u.id = m."userId"
@@ -58,9 +60,22 @@ export async function GET(
         const result = await query(queryText);
 
         csv = 'Name,Email,Phone,Gender,Age,Membership Status,Plan,Start Date,End Date,Joined\n';
-        csv += result.rows.map((row: any) => 
-          `"${row.name}","${row.email}","${row.phone || ''}","${row.gender || ''}","${row.age || ''}","${row.membership_status || 'None'}","${row.plan_name || ''}","${row.startDate ? new Date(row.startDate).toLocaleDateString() : ''}","${row.endDate ? new Date(row.endDate).toLocaleDateString() : ''}","${new Date(row.createdAt).toLocaleDateString()}"`
-        ).join('\n');
+        csv += result.rows.map((row: any) => {
+          // Determine actual membership status
+          let status = 'No Membership';
+          if (row.membership_status) {
+            if (row.membership_status === 'BLOCKED') {
+              status = 'Cancelled';
+            } else if (row.membership_status === 'ACTIVE' && row.endDate && new Date(row.endDate) >= new Date()) {
+              status = 'Active';
+            } else if (row.endDate && new Date(row.endDate) < new Date()) {
+              status = 'Expired';
+            } else {
+              status = row.membership_status;
+            }
+          }
+          return `"${row.name}","${row.email}","${row.phone || ''}","${row.gender || ''}","${row.age || ''}","${status}","${row.plan_name || ''}","${row.startDate ? new Date(row.startDate).toLocaleDateString() : ''}","${row.endDate ? new Date(row.endDate).toLocaleDateString() : ''}","${new Date(row.createdAt).toLocaleDateString()}"`;
+        }).join('\n');
         break;
       }
 
@@ -109,6 +124,74 @@ export async function GET(
         csv = 'Member,Email,Plan,Amount,Start Date,Status\n';
         csv += result.rows.map((row: any) => 
           `"${row.name}","${row.email}","${row.plan_name}","₹${row.price}","${new Date(row.startDate).toLocaleDateString()}","${row.status}"`
+        ).join('\n');
+        break;
+      }
+
+      case 'expired': {
+        const queryText = `
+          SELECT 
+            u.name, u.email, u.phone,
+            p.name as plan_name, p.price,
+            m."startDate", m."endDate", m.status
+          FROM memberships m
+          JOIN users u ON m."userId" = u.id
+          JOIN plans p ON m."planId" = p.id
+          WHERE m.status = 'EXPIRED' OR m."endDate" < NOW()
+          ORDER BY m."endDate" DESC
+        `;
+
+        const result = await query(queryText);
+
+        csv = 'Name,Email,Phone,Plan,Amount,Start Date,End Date,Status\n';
+        csv += result.rows.map((row: any) => 
+          `"${row.name}","${row.email}","${row.phone || ''}","${row.plan_name}","₹${row.price}","${new Date(row.startDate).toLocaleDateString()}","${new Date(row.endDate).toLocaleDateString()}","${row.status}"`
+        ).join('\n');
+        break;
+      }
+
+      case 'active': {
+        const queryText = `
+          SELECT 
+            u.name, u.email, u.phone,
+            p.name as plan_name, p.price,
+            m."startDate", m."endDate", m.status
+          FROM memberships m
+          JOIN users u ON m."userId" = u.id
+          JOIN plans p ON m."planId" = p.id
+          WHERE m.status = 'ACTIVE' AND m."endDate" >= NOW()
+          ORDER BY m."endDate" ASC
+        `;
+
+        const result = await query(queryText);
+
+        csv = 'Name,Email,Phone,Plan,Amount,Start Date,End Date,Days Remaining\n';
+        csv += result.rows.map((row: any) => {
+          const daysRemaining = Math.ceil((new Date(row.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return `"${row.name}","${row.email}","${row.phone || ''}","${row.plan_name}","₹${row.price}","${new Date(row.startDate).toLocaleDateString()}","${new Date(row.endDate).toLocaleDateString()}","${daysRemaining}"`;
+        }).join('\n');
+        break;
+      }
+
+      case 'pending': {
+        const queryText = `
+          SELECT 
+            u.name, u.email, u.phone,
+            p.name as plan_name, p.price,
+            m."endDate"
+          FROM users u
+          LEFT JOIN memberships m ON u.id = m."userId"
+          LEFT JOIN plans p ON m."planId" = p.id
+          WHERE u.role = 'MEMBER'
+          AND (m.status = 'EXPIRED' OR m."endDate" < NOW() OR m.id IS NULL)
+          ORDER BY m."endDate" DESC NULLS LAST
+        `;
+
+        const result = await query(queryText);
+
+        csv = 'Name,Email,Phone,Last Plan,Pending Amount,Expired On\n';
+        csv += result.rows.map((row: any) => 
+          `"${row.name}","${row.email}","${row.phone || ''}","${row.plan_name || 'No Plan'}","₹${row.price || 0}","${row.endDate ? new Date(row.endDate).toLocaleDateString() : 'N/A'}"`
         ).join('\n');
         break;
       }

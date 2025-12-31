@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { 
-  ChevronLeft, FileText, Download, Users, CreditCard, 
-  Calendar, TrendingUp, RefreshCw, Loader2, Filter, X
+  ChevronLeft, Download, Users, UserX, UserCheck, 
+  IndianRupee, RefreshCw, Loader2, FileSpreadsheet,
+  Calendar, CreditCard, X, Filter
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,10 +16,157 @@ interface ReportStats {
   totalMembers: number;
   activeMembers: number;
   expiredMembers: number;
+  pendingMembers: number;
+  pendingAmount: number;
   totalRevenue: number;
   monthlyRevenue: number;
-  totalCheckIns: number;
-  avgCheckInsPerDay: number;
+}
+
+interface FilterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  reportType: string;
+  reportTitle: string;
+  onExport: (startDate: string, endDate: string) => void;
+  exporting: boolean;
+}
+
+function FilterModal({ isOpen, onClose, reportType, reportTitle, onExport, exporting }: FilterModalProps) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  useEffect(() => {
+    // Set default dates (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    setEndDate(today.toISOString().split('T')[0]);
+    setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
+  }, [isOpen]);
+
+  const quickSelect = (days: number) => {
+    const end = new Date();
+    const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+    setEndDate(end.toISOString().split('T')[0]);
+    setStartDate(start.toISOString().split('T')[0]);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25 }}
+            className="w-full max-w-md bg-secondary rounded-2xl border border-white/10 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent-blue/20 flex items-center justify-center">
+                  <Filter size={18} className="text-accent-blue" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">{reportTitle}</h3>
+                  <p className="text-xs text-white/70">Select date range to export</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+              >
+                <X size={16} className="text-white/60" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 space-y-4">
+              {/* Date Inputs */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-white/70 mb-2 font-medium">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-accent-blue"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/70 mb-2 font-medium">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-accent-blue"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Select */}
+              <div>
+                <p className="text-xs text-white/70 mb-2 font-medium">Quick Select</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Today', days: 0 },
+                    { label: '7 days', days: 7 },
+                    { label: '30 days', days: 30 },
+                    { label: '90 days', days: 90 },
+                    { label: 'This Year', days: 365 },
+                  ].map((option) => (
+                    <button
+                      key={option.label}
+                      onClick={() => quickSelect(option.days)}
+                      className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white/80 hover:bg-white/10 hover:text-white transition-colors font-medium"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Export Options */}
+              <div className="pt-2 space-y-2">
+                <GlassButton
+                  onClick={() => onExport(startDate, endDate)}
+                  disabled={exporting}
+                  className="w-full !bg-accent-blue flex items-center justify-center gap-2"
+                >
+                  {exporting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Download size={16} />
+                  )}
+                  <span>Export with Date Filter</span>
+                </GlassButton>
+                
+                <GlassButton
+                  onClick={() => onExport('', '')}
+                  disabled={exporting}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  {exporting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <FileSpreadsheet size={16} />
+                  )}
+                  <span>Export All Data</span>
+                </GlassButton>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 export default function AdminReportsPage() {
@@ -26,33 +174,20 @@ export default function AdminReportsPage() {
   const [stats, setStats] = useState<ReportStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<string | null>(null);
-  
-  // Date range filter state
-  const [showDateFilter, setShowDateFilter] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [dateFilterApplied, setDateFilterApplied] = useState(false);
+  const [filterModal, setFilterModal] = useState<{ isOpen: boolean; reportId: string; title: string }>({
+    isOpen: false,
+    reportId: '',
+    title: '',
+  });
 
   useEffect(() => {
     loadStats();
   }, []);
 
-  // Set default dates (last 30 days)
-  useEffect(() => {
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    setEndDate(today.toISOString().split('T')[0]);
-    setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
-  }, []);
-
   const loadStats = async () => {
     setLoading(true);
     try {
-      let url = '/api/v1/admin/reports/stats';
-      if (dateFilterApplied && startDate && endDate) {
-        url += `?startDate=${startDate}&endDate=${endDate}`;
-      }
-      const data = await apiClient.get(url);
+      const data = await apiClient.get('/api/v1/admin/reports/stats');
       setStats(data);
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -61,43 +196,36 @@ export default function AdminReportsPage() {
     }
   };
 
-  const applyDateFilter = () => {
-    setDateFilterApplied(true);
-    setShowDateFilter(false);
-    loadStats();
+  const openFilterModal = (reportId: string, title: string) => {
+    setFilterModal({ isOpen: true, reportId, title });
   };
 
-  const clearDateFilter = () => {
-    setDateFilterApplied(false);
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    setEndDate(today.toISOString().split('T')[0]);
-    setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
-    setShowDateFilter(false);
-    loadStats();
+  const closeFilterModal = () => {
+    setFilterModal({ isOpen: false, reportId: '', title: '' });
   };
 
-  const exportReport = async (type: string) => {
+  const exportReport = async (startDate: string, endDate: string) => {
+    const type = filterModal.reportId;
     setExporting(type);
     try {
       let url = `/api/v1/admin/reports/export/${type}`;
-      if (dateFilterApplied && startDate && endDate) {
+      if (startDate && endDate) {
         url += `?startDate=${startDate}&endDate=${endDate}`;
       }
       const response = await apiClient.get(url);
       
-      // Create and download CSV
       const csvContent = response.csv || response;
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const fileUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = fileUrl;
-      const dateRange = dateFilterApplied ? `_${startDate}_to_${endDate}` : '';
+      const dateRange = startDate && endDate ? `_${startDate}_to_${endDate}` : '';
       a.download = `${type}_report${dateRange}_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(fileUrl);
+      closeFilterModal();
     } catch (error) {
       console.error('Failed to export:', error);
       alert('Failed to export report');
@@ -106,309 +234,199 @@ export default function AdminReportsPage() {
     }
   };
 
-  const statCards = [
-    { 
-      label: 'Total Members', 
-      value: stats?.totalMembers || 0, 
-      icon: Users, 
-      color: 'text-accent-blue',
-      bg: 'bg-accent-blue/10'
-    },
-    { 
-      label: 'Active Members', 
-      value: stats?.activeMembers || 0, 
-      icon: TrendingUp, 
-      color: 'text-green-400',
-      bg: 'bg-green-500/10'
-    },
-    { 
-      label: 'Expired Members', 
-      value: stats?.expiredMembers || 0, 
-      icon: Calendar, 
-      color: 'text-red-400',
-      bg: 'bg-red-500/10'
-    },
-    { 
-      label: 'Total Revenue', 
-      value: `₹${stats?.totalRevenue || 0}`, 
-      icon: CreditCard, 
-      color: 'text-yellow-400',
-      bg: 'bg-yellow-500/10'
-    },
-  ];
-
-  const exportOptions = [
-    { 
-      type: 'members', 
-      label: 'Members Report', 
-      desc: 'Export all member data with contact info and membership status',
+  const reportCards = [
+    {
+      id: 'members',
+      title: 'Total Members',
+      subtitle: 'All registered members',
+      value: stats?.totalMembers || 0,
       icon: Users,
-      color: 'text-accent-blue'
+      gradient: 'from-blue-500 to-cyan-500',
+      bgGlow: 'bg-blue-500/20',
+      iconBg: 'bg-blue-500/20',
+      iconColor: 'text-blue-400',
     },
-    { 
-      type: 'attendance', 
-      label: 'Attendance Report', 
-      desc: 'Export attendance records with check-in/out times',
+    {
+      id: 'active',
+      title: 'Active Members',
+      subtitle: 'Members with valid membership',
+      value: stats?.activeMembers || 0,
+      icon: UserCheck,
+      gradient: 'from-green-500 to-emerald-500',
+      bgGlow: 'bg-green-500/20',
+      iconBg: 'bg-green-500/20',
+      iconColor: 'text-green-400',
+    },
+    {
+      id: 'expired',
+      title: 'Expired Members',
+      subtitle: 'Members needing renewal',
+      value: stats?.expiredMembers || 0,
+      icon: UserX,
+      gradient: 'from-red-500 to-orange-500',
+      bgGlow: 'bg-red-500/20',
+      iconBg: 'bg-red-500/20',
+      iconColor: 'text-red-400',
+    },
+    {
+      id: 'pending',
+      title: 'Pending Amount',
+      subtitle: 'Revenue from expired memberships',
+      value: `₹${(stats?.pendingAmount || 0).toLocaleString()}`,
+      displayValue: true,
+      icon: IndianRupee,
+      gradient: 'from-yellow-500 to-amber-500',
+      bgGlow: 'bg-yellow-500/20',
+      iconBg: 'bg-yellow-500/20',
+      iconColor: 'text-yellow-400',
+    },
+    {
+      id: 'attendance',
+      title: 'Attendance Report',
+      subtitle: 'Check-in/out records',
+      value: 'All Records',
+      displayValue: true,
       icon: Calendar,
-      color: 'text-green-400'
+      gradient: 'from-purple-500 to-violet-500',
+      bgGlow: 'bg-purple-500/20',
+      iconBg: 'bg-purple-500/20',
+      iconColor: 'text-purple-400',
     },
-    { 
-      type: 'revenue', 
-      label: 'Revenue Report', 
-      desc: 'Export payment and membership revenue data',
+    {
+      id: 'revenue',
+      title: 'Revenue Report',
+      subtitle: 'Detailed payment history',
+      value: `₹${(stats?.totalRevenue || 0).toLocaleString()}`,
+      displayValue: true,
       icon: CreditCard,
-      color: 'text-yellow-400'
+      gradient: 'from-teal-500 to-cyan-500',
+      bgGlow: 'bg-teal-500/20',
+      iconBg: 'bg-teal-500/20',
+      iconColor: 'text-teal-400',
     },
   ];
 
   return (
     <div className="min-h-screen pb-24">
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={filterModal.isOpen}
+        onClose={closeFilterModal}
+        reportType={filterModal.reportId}
+        reportTitle={filterModal.title}
+        onExport={exportReport}
+        exporting={exporting === filterModal.reportId}
+      />
+
       {/* Header */}
-      <div className="relative bg-gradient-to-b from-yellow-500/20 via-accent-blue/10 to-transparent pt-4 pb-8 px-4">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative bg-gradient-to-b from-purple-500/20 via-accent-blue/10 to-transparent pt-4 pb-8 px-4">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-6">
           <button 
             onClick={() => router.push('/app/admin')} 
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-white">Reports</h1>
-            <p className="text-xs text-white/50">Analytics & exports</p>
+            <h1 className="text-2xl font-bold text-white">Reports</h1>
+            <p className="text-sm text-white/50">Download member reports</p>
           </div>
           <button
-            onClick={() => setShowDateFilter(true)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${
-              dateFilterApplied 
-                ? 'bg-accent-blue text-white border-accent-blue' 
-                : 'bg-white/5 border-white/10 text-white/60'
-            }`}
-          >
-            <Filter size={18} />
-          </button>
-          <button
             onClick={loadStats}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center"
+            disabled={loading}
+            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <RefreshCw size={18} className={`text-white/60 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        {/* Date Filter Badge */}
-        {dateFilterApplied && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 bg-accent-blue/20 border border-accent-blue/30 rounded-xl px-3 py-2 mt-2"
-          >
-            <Calendar size={14} className="text-accent-blue" />
-            <span className="text-xs text-accent-blue font-medium">
-              {startDate} to {endDate}
-            </span>
-            <button 
-              onClick={clearDateFilter}
-              className="ml-auto p-1 rounded-full hover:bg-white/10"
-            >
-              <X size={14} className="text-white/60" />
-            </button>
-          </motion.div>
-        )}
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <p className="text-xs text-white/40 mb-1">Total Revenue</p>
+            <p className="text-xl font-bold text-green-400">
+              ₹{loading ? '...' : (stats?.totalRevenue || 0).toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <p className="text-xs text-white/40 mb-1">This Month</p>
+            <p className="text-xl font-bold text-accent-blue">
+              ₹{loading ? '...' : (stats?.monthlyRevenue || 0).toLocaleString()}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Date Filter Modal */}
-      <AnimatePresence>
-        {showDateFilter && (
+      {/* Report Cards */}
+      <div className="px-4 -mt-2 space-y-4">
+        <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">
+          Download Reports
+        </h3>
+        
+        {reportCards.map((card, index) => (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
-            onClick={() => setShowDateFilter(false)}
+            key={card.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
           >
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25 }}
-              className="w-full max-w-md bg-secondary rounded-t-3xl p-6 border-t border-white/10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white">Custom Date Range</h3>
-                <button 
-                  onClick={() => setShowDateFilter(false)}
-                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs text-white/40 mb-2">Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-accent-blue"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-white/40 mb-2">End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-accent-blue"
-                  />
-                </div>
-
-                {/* Quick Select Options */}
-                <div className="pt-2">
-                  <p className="text-xs text-white/40 mb-2">Quick Select</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { label: 'Today', days: 0 },
-                      { label: 'Last 7 days', days: 7 },
-                      { label: 'Last 30 days', days: 30 },
-                      { label: 'Last 90 days', days: 90 },
-                      { label: 'This Year', days: 365 },
-                    ].map((option) => (
-                      <button
-                        key={option.label}
-                        onClick={() => {
-                          const end = new Date();
-                          const start = new Date(end.getTime() - option.days * 24 * 60 * 60 * 1000);
-                          setEndDate(end.toISOString().split('T')[0]);
-                          setStartDate(start.toISOString().split('T')[0]);
-                        }}
-                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white/70 hover:bg-white/10 transition-colors"
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+            <GlassCard className="!p-0 overflow-hidden">
+              <div className="relative">
+                {/* Background glow */}
+                <div className={`absolute top-0 right-0 w-32 h-32 ${card.bgGlow} rounded-full blur-3xl opacity-50 pointer-events-none`} />
+                
+                <div className="relative p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center`}>
+                      <card.icon size={28} className={card.iconColor} />
+                    </div>
+                    <button
+                      onClick={() => openFilterModal(card.id, card.title)}
+                      disabled={loading}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r ${card.gradient} text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50`}
+                    >
+                      <Download size={16} />
+                      <span>Export</span>
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-white">{card.title}</h3>
+                    <p className="text-xs text-white/40">{card.subtitle}</p>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-xs text-white/40 mb-1">Count / Amount</p>
+                        <p className={`text-3xl font-bold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                          {loading ? '...' : (card.displayValue ? card.value : card.value)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 text-white/30">
+                        <FileSpreadsheet size={14} />
+                        <span className="text-xs">CSV</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex gap-3 pt-4">
-                  <GlassButton 
-                    onClick={clearDateFilter} 
-                    className="flex-1"
-                  >
-                    Clear
-                  </GlassButton>
-                  <GlassButton 
-                    onClick={applyDateFilter}
-                    className="flex-1 !bg-accent-blue"
-                  >
-                    Apply Filter
-                  </GlassButton>
-                </div>
               </div>
-            </motion.div>
+            </GlassCard>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="px-4 -mt-2 space-y-6">
-        {/* Stats Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Overview</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {statCards.map((stat, index) => (
-              <GlassCard key={index} className="!p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                    <stat.icon size={18} className={stat.color} />
-                  </div>
-                  <div>
-                    <p className={`text-lg font-bold ${stat.color}`}>
-                      {loading ? '-' : stat.value}
-                    </p>
-                    <p className="text-[10px] text-white/40">{stat.label}</p>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Monthly Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">This Month</h3>
-          <GlassCard className="!p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-white/40 text-xs mb-1">Monthly Revenue</p>
-                <p className="text-2xl font-bold text-green-400">
-                  ₹{loading ? '-' : stats?.monthlyRevenue || 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-white/40 text-xs mb-1">Avg. Daily Check-ins</p>
-                <p className="text-2xl font-bold text-accent-blue">
-                  {loading ? '-' : stats?.avgCheckInsPerDay?.toFixed(1) || 0}
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-        </motion.div>
-
-        {/* Export Options */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Export Reports</h3>
-          <div className="space-y-3">
-            {exportOptions.map((option, index) => (
-              <GlassCard key={index} className="!p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
-                      <option.icon size={20} className={option.color} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm text-white">{option.label}</h4>
-                      <p className="text-xs text-white/40">{option.desc}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => exportReport(option.type)}
-                    disabled={exporting === option.type}
-                    className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
-                  >
-                    {exporting === option.type ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <Download size={18} />
-                    )}
-                  </button>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        </motion.div>
+        ))}
 
         {/* Info Note */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-center pt-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center pt-6 pb-4"
         >
-          <p className="text-xs text-white/40">
-            Reports are exported in CSV format for easy analysis
+          <p className="text-xs text-white/30">
+            Reports are exported in CSV format for easy analysis in Excel or Google Sheets
           </p>
         </motion.div>
       </div>

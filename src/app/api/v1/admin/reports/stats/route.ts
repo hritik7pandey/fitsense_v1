@@ -59,6 +59,29 @@ export async function GET(request: NextRequest) {
     `);
     const expiredMembers = parseInt(expiredMembersResult.rows[0]?.count || '0');
 
+    // Members without active membership (pending/no membership)
+    const pendingMembersResult = await query(`
+      SELECT COUNT(*) as count 
+      FROM users u 
+      WHERE u.role = 'MEMBER' 
+      AND NOT EXISTS (
+        SELECT 1 FROM memberships m 
+        WHERE m."userId" = u.id AND m.status = 'ACTIVE' AND m."endDate" >= NOW()
+      )
+    `);
+    const pendingMembers = parseInt(pendingMembersResult.rows[0]?.count || '0');
+
+    // Pending amount (sum of plan prices for expired members who need to renew)
+    const pendingAmountResult = await query(`
+      SELECT COALESCE(SUM(p.price), 0) as total
+      FROM users u
+      LEFT JOIN memberships m ON u.id = m."userId"
+      LEFT JOIN plans p ON m."planId" = p.id
+      WHERE u.role = 'MEMBER'
+      AND (m.status = 'EXPIRED' OR m."endDate" < NOW())
+    `);
+    const pendingAmount = parseFloat(pendingAmountResult.rows[0]?.total || '0');
+
     // Total revenue (filtered by date if provided)
     const totalRevenueResult = await query(`
       SELECT COALESCE(SUM(p.price), 0) as total 
@@ -107,6 +130,8 @@ export async function GET(request: NextRequest) {
       totalMembers,
       activeMembers,
       expiredMembers,
+      pendingMembers,
+      pendingAmount,
       totalRevenue,
       monthlyRevenue,
       totalCheckIns,
