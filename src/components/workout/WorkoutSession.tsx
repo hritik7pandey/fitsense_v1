@@ -413,7 +413,7 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
     );
   }
   
-  // Rest Timer Screen
+  // Rest Timer Screen - Large Central Timer
   if (phase === 'rest') {
     const restProgress = ((restDuration - restTime) / restDuration) * 100;
     
@@ -438,22 +438,35 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
         </div>
         
         {/* Progress Bar */}
-        <div className="h-1 bg-white/10">
-          <div className="h-full bg-accent-blue transition-all" style={{ width: `${progressPercent}%` }} />
+        <div className="h-1.5 bg-white/10">
+          <div className="h-full bg-gradient-to-r from-accent-blue to-accent-purple transition-all" style={{ width: `${progressPercent}%` }} />
         </div>
         
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <p className="text-white/50 mb-4 uppercase tracking-wider text-sm">Rest Time</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-white/50 mb-6 uppercase tracking-widest text-sm font-medium"
+          >
+            Rest Time
+          </motion.p>
           
-          {/* Circular Timer */}
-          <div className="relative w-48 h-48 md:w-64 md:h-64 mb-8">
+          {/* Large Circular Timer */}
+          <div className="relative w-64 h-64 md:w-80 md:h-80 mb-8">
+            {/* Pulsing glow effect */}
+            <motion.div 
+              className="absolute inset-0 rounded-full bg-accent-blue/20 blur-2xl"
+              animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            
             <svg className="w-full h-full transform -rotate-90">
               <circle
                 cx="50%"
                 cy="50%"
                 r="45%"
                 fill="none"
-                stroke="rgba(255,255,255,0.1)"
+                stroke="rgba(255,255,255,0.08)"
                 strokeWidth="8"
               />
               <circle
@@ -461,7 +474,7 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
                 cy="50%"
                 r="45%"
                 fill="none"
-                stroke="url(#gradient)"
+                stroke="url(#restGradient)"
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 45}`}
@@ -469,24 +482,31 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
                 className="transition-all duration-1000"
               />
               <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="restGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#3b82f6" />
                   <stop offset="100%" stopColor="#8b5cf6" />
                 </linearGradient>
               </defs>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-5xl md:text-6xl font-bold font-mono text-white">{restTime}</span>
-              <span className="text-white/50 text-sm">seconds</span>
+              <motion.span 
+                key={restTime}
+                initial={{ scale: 1.2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-7xl md:text-8xl font-bold font-mono text-white"
+              >
+                {restTime}
+              </motion.span>
+              <span className="text-white/40 text-lg mt-1">seconds</span>
             </div>
           </div>
           
           {/* Next Exercise Preview */}
-          <GlassCard className="!p-4 w-full max-w-md mb-6">
-            <p className="text-xs text-white/40 mb-2 uppercase">Up Next</p>
+          <GlassCard className="!p-4 w-full max-w-sm mb-6">
+            <p className="text-xs text-white/40 mb-2 uppercase tracking-wider">Up Next</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-accent-blue/20 flex items-center justify-center">
-                <Dumbbell size={20} className="text-accent-blue" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center">
+                <Dumbbell size={22} className="text-white" />
               </div>
               <div className="flex-1 text-left">
                 <p className="font-bold text-white">{currentExercise?.name}</p>
@@ -495,15 +515,15 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
             </div>
           </GlassCard>
           
-          {/* Rest Duration Selector */}
-          <div className="flex gap-2 mb-6">
+          {/* Rest Duration Quick Select */}
+          <div className="flex gap-2 mb-8">
             {[30, 60, 90, 120].map(sec => (
               <button
                 key={sec}
                 onClick={() => { setRestDuration(sec); setRestTime(sec); }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                   restDuration === sec 
-                    ? 'bg-accent-blue text-white' 
+                    ? 'bg-accent-blue text-white shadow-lg shadow-accent-blue/30' 
                     : 'bg-white/5 text-white/50 hover:bg-white/10'
                 }`}
               >
@@ -512,7 +532,7 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
             ))}
           </div>
           
-          <div className="flex gap-3 w-full max-w-md">
+          <div className="flex gap-3 w-full max-w-sm">
             <GlassButton onClick={() => setIsPaused(!isPaused)} className="flex-1">
               {isPaused ? <Play size={20} /> : <Pause size={20} />}
               <span>{isPaused ? 'Resume' : 'Pause'}</span>
@@ -530,7 +550,7 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
     );
   }
   
-  // Exercise Screen (Main)
+  // Exercise Screen (Main) - Redesigned with Large Central Timer
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -542,9 +562,9 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
         <button onClick={onClose} className="p-2 rounded-full bg-white/10">
           <X size={20} />
         </button>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="font-mono text-white">{formatTime(workoutTime)}</span>
+        <div className="text-center">
+          <p className="text-xs text-white/40">Exercise {currentExerciseIndex + 1}/{exercises.length}</p>
+          <p className="text-sm font-medium text-white truncate max-w-[180px]">{currentExercise?.name}</p>
         </div>
         <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2 rounded-full bg-white/10">
           {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
@@ -552,98 +572,157 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
       </div>
       
       {/* Progress Bar */}
-      <div className="h-1 bg-white/10">
+      <div className="h-1.5 bg-white/10">
         <motion.div 
-          className="h-full bg-gradient-to-r from-accent-blue to-accent-purple" 
+          className="h-full bg-gradient-to-r from-accent-blue via-accent-purple to-green-500" 
           initial={{ width: 0 }}
           animate={{ width: `${progressPercent}%` }}
         />
       </div>
       
-      <div className="flex-1 overflow-auto">
-        <div className="p-4 md:p-6 max-w-2xl mx-auto">
-          {/* Exercise Info */}
-          <div className="text-center mb-6">
-            <p className="text-white/40 text-sm mb-1">
-              Exercise {currentExerciseIndex + 1} of {exercises.length}
-            </p>
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{currentExercise?.name}</h2>
-            {currentExercise?.notes && (
-              <p className="text-sm text-accent-blue/70">💡 {currentExercise.notes}</p>
-            )}
-          </div>
-          
-          {/* Set Progress */}
-          <div className="flex justify-center gap-2 mb-8">
-            {Array.from({ length: totalSets }).map((_, i) => {
-              const setLog = exerciseLogs[currentExerciseIndex]?.sets[i];
-              const isComplete = setLog?.completed;
-              const isCurrent = i === currentSetIndex;
-              
-              return (
-                <div
-                  key={i}
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-bold transition-all ${
-                    isComplete
-                      ? 'bg-green-500 text-white'
-                      : isCurrent
-                      ? 'bg-accent-blue text-white scale-110'
-                      : 'bg-white/10 text-white/40'
-                  }`}
-                >
-                  {isComplete ? <Check size={20} /> : i + 1}
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Current Set Card */}
-          <GlassCard className="!p-6 mb-6">
-            <div className="text-center mb-6">
-              <p className="text-white/40 text-sm mb-1">Current Set</p>
-              <p className="text-4xl font-bold text-accent-blue">{currentSetIndex + 1}</p>
-              <p className="text-white/50">of {totalSets} sets</p>
-            </div>
+      <div className="flex-1 overflow-auto flex flex-col">
+        {/* Large Central Timer */}
+        <div className="flex-shrink-0 py-6 md:py-10 px-4">
+          <div className="relative w-56 h-56 md:w-72 md:h-72 mx-auto">
+            {/* Outer glow ring */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-accent-blue/20 to-accent-purple/20 blur-xl" />
             
+            {/* Timer circle background */}
+            <svg className="w-full h-full transform -rotate-90">
+              <circle
+                cx="50%"
+                cy="50%"
+                r="46%"
+                fill="none"
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth="6"
+              />
+              {/* Progress arc */}
+              <circle
+                cx="50%"
+                cy="50%"
+                r="46%"
+                fill="none"
+                stroke="url(#timerGradient)"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 46}`}
+                strokeDashoffset={`${2 * Math.PI * 46 * (1 - progressPercent / 100)}`}
+                className="transition-all duration-500"
+              />
+              <defs>
+                <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="50%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#22c55e" />
+                </linearGradient>
+              </defs>
+            </svg>
+            
+            {/* Timer content */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-1 mb-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-xs text-white/40 uppercase tracking-wider">Active</span>
+              </div>
+              <span className="text-5xl md:text-7xl font-bold font-mono text-white tracking-tight">
+                {formatTime(workoutTime)}
+              </span>
+              <div className="mt-2 px-4 py-1.5 bg-white/5 rounded-full">
+                <span className="text-sm text-white/60">
+                  Set <span className="text-accent-blue font-bold">{currentSetIndex + 1}</span> of {totalSets}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Set Progress Dots */}
+        <div className="flex justify-center gap-3 mb-6 px-4">
+          {Array.from({ length: totalSets }).map((_, i) => {
+            const setLog = exerciseLogs[currentExerciseIndex]?.sets[i];
+            const isComplete = setLog?.completed;
+            const isCurrent = i === currentSetIndex;
+            
+            return (
+              <motion.div
+                key={i}
+                initial={{ scale: 0.8 }}
+                animate={{ scale: isCurrent ? 1.2 : 1 }}
+                className={`w-4 h-4 rounded-full transition-all ${
+                  isComplete
+                    ? 'bg-green-500'
+                    : isCurrent
+                    ? 'bg-accent-blue ring-4 ring-accent-blue/30'
+                    : 'bg-white/20'
+                }`}
+              />
+            );
+          })}
+        </div>
+
+        {/* Reps & Weight Input Card */}
+        <div className="px-4 pb-4 flex-1">
+          <GlassCard className="!p-5">
             {/* Reps Counter */}
             <div className="mb-6">
-              <p className="text-center text-white/40 text-sm mb-3">Reps</p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-white/50 font-medium">Reps</span>
+                <span className="text-xs text-white/30">Target: {currentExercise?.reps}</span>
+              </div>
               <div className="flex items-center justify-center gap-4">
                 <button 
                   onClick={() => adjustReps(-1)}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold hover:bg-white/20 transition-colors"
+                  className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl font-bold hover:bg-white/20 active:scale-95 transition-all"
                 >
-                  -
+                  −
                 </button>
-                <div className="w-24 text-center">
-                  <span className="text-5xl md:text-6xl font-bold text-white">{currentReps}</span>
+                <div className="w-28 text-center">
+                  <span className="text-6xl font-bold text-white">{currentReps}</span>
                 </div>
                 <button 
                   onClick={() => adjustReps(1)}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold hover:bg-white/20 transition-colors"
+                  className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl font-bold hover:bg-white/20 active:scale-95 transition-all"
                 >
                   +
                 </button>
               </div>
-              <p className="text-center text-white/30 text-xs mt-2">Target: {currentExercise?.reps}</p>
             </div>
+            
+            {/* Divider */}
+            <div className="h-px bg-white/10 my-4" />
             
             {/* Weight Counter */}
             <div>
-              <p className="text-center text-white/40 text-sm mb-3">Weight (kg)</p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-white/50 font-medium">Weight (kg)</span>
+                <div className="flex gap-1">
+                  {[5, 10, 20].map(w => (
+                    <button
+                      key={w}
+                      onClick={() => setCurrentWeight(w)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                        currentWeight === w ? 'bg-accent-blue text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'
+                      }`}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center justify-center gap-4">
                 <button 
                   onClick={() => adjustWeight(-2.5)}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold hover:bg-white/20 transition-colors"
+                  className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl font-bold hover:bg-white/20 active:scale-95 transition-all"
                 >
-                  -
+                  −
                 </button>
-                <div className="w-24 text-center">
-                  <span className="text-5xl md:text-6xl font-bold text-white">{currentWeight}</span>
+                <div className="w-28 text-center">
+                  <span className="text-6xl font-bold text-white">{currentWeight}</span>
                 </div>
                 <button 
                   onClick={() => adjustWeight(2.5)}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/10 flex items-center justify-center text-2xl font-bold hover:bg-white/20 transition-colors"
+                  className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl font-bold hover:bg-white/20 active:scale-95 transition-all"
                 >
                   +
                 </button>
@@ -651,72 +730,52 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
             </div>
           </GlassCard>
           
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            <GlassButton 
-              onClick={completeSet}
-              fullWidth
-              size="lg"
-              className="!bg-gradient-to-r !from-green-500 !to-emerald-600 !py-5"
-            >
-              <Check size={24} />
-              <span className="text-lg font-bold">Complete Set</span>
-            </GlassButton>
-            
-            <div className="flex gap-3">
-              <GlassButton onClick={() => setIsPaused(!isPaused)} className="flex-1">
-                {isPaused ? <Play size={20} /> : <Pause size={20} />}
-                <span>{isPaused ? 'Resume' : 'Pause'}</span>
-              </GlassButton>
-              <GlassButton 
-                onClick={() => {
-                  if (currentExerciseIndex < exercises.length - 1) {
-                    setCurrentExerciseIndex(prev => prev + 1);
-                    setCurrentSetIndex(0);
-                  }
-                }}
-                className="flex-1"
-                disabled={currentExerciseIndex >= exercises.length - 1}
-              >
-                <SkipForward size={20} />
-                <span>Skip Exercise</span>
-              </GlassButton>
+          {/* Exercise Notes */}
+          {currentExercise?.notes && (
+            <div className="mt-3 px-4 py-3 bg-accent-blue/10 border border-accent-blue/20 rounded-xl">
+              <p className="text-sm text-accent-blue">💡 {currentExercise.notes}</p>
             </div>
-          </div>
+          )}
+        </div>
+        
+        {/* Bottom Action Buttons - Fixed */}
+        <div className="flex-shrink-0 p-4 border-t border-white/10 bg-primary/80 backdrop-blur-xl space-y-3">
+          <GlassButton 
+            onClick={completeSet}
+            fullWidth
+            size="lg"
+            className="!bg-gradient-to-r !from-green-500 !to-emerald-600 !py-5"
+          >
+            <Check size={24} />
+            <span className="text-lg font-bold">Complete Set</span>
+          </GlassButton>
           
-          {/* Exercise List Preview */}
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-white/40 mb-3">All Exercises</h3>
-            <div className="space-y-2">
-              {exercises.map((ex, i) => {
-                const log = exerciseLogs[i];
-                const isComplete = log?.completed;
-                const isCurrent = i === currentExerciseIndex;
-                
-                return (
-                  <div 
-                    key={i}
-                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                      isCurrent 
-                        ? 'bg-accent-blue/20 border border-accent-blue/30' 
-                        : isComplete 
-                        ? 'bg-green-500/10 border border-green-500/20'
-                        : 'bg-white/5'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      isComplete ? 'bg-green-500' : isCurrent ? 'bg-accent-blue' : 'bg-white/10'
-                    }`}>
-                      {isComplete ? <Check size={16} /> : <span className="text-sm font-bold">{i + 1}</span>}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-sm font-medium ${isCurrent ? 'text-white' : 'text-white/70'}`}>{ex.name}</p>
-                      <p className="text-xs text-white/40">{ex.sets} × {ex.reps}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="flex gap-3">
+            <GlassButton onClick={() => setIsPaused(!isPaused)} className="flex-1">
+              {isPaused ? <Play size={20} /> : <Pause size={20} />}
+              <span>{isPaused ? 'Resume' : 'Pause'}</span>
+            </GlassButton>
+            <GlassButton 
+              onClick={() => {
+                if (currentExerciseIndex < exercises.length - 1) {
+                  setExerciseLogs(prev => {
+                    const updated = [...prev];
+                    if (updated[currentExerciseIndex]) {
+                      updated[currentExerciseIndex].completed = true;
+                    }
+                    return updated;
+                  });
+                  setCurrentExerciseIndex(prev => prev + 1);
+                  setCurrentSetIndex(0);
+                } else {
+                  completeWorkout();
+                }
+              }}
+              className="flex-1"
+            >
+              <SkipForward size={20} />
+              <span>{currentExerciseIndex >= exercises.length - 1 ? 'Finish' : 'Skip'}</span>
+            </GlassButton>
           </div>
         </div>
       </div>
@@ -728,14 +787,18 @@ export default function WorkoutSession({ exercises, workoutName, onClose, onComp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/80 flex items-center justify-center z-10"
+            className="absolute inset-0 bg-black/90 flex items-center justify-center z-10"
           >
-            <div className="text-center">
-              <Pause size={64} className="text-white/50 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-4">Workout Paused</h2>
-              <GlassButton onClick={() => setIsPaused(false)} size="lg">
+            <div className="text-center p-6">
+              <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6">
+                <Pause size={48} className="text-white/50" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">Paused</h2>
+              <p className="text-white/50 mb-8">Take a breather, you've got this!</p>
+              <p className="text-4xl font-mono font-bold text-accent-blue mb-8">{formatTime(workoutTime)}</p>
+              <GlassButton onClick={() => setIsPaused(false)} size="lg" className="!px-12">
                 <Play size={24} />
-                <span>Resume</span>
+                <span className="text-lg">Resume Workout</span>
               </GlassButton>
             </div>
           </motion.div>
