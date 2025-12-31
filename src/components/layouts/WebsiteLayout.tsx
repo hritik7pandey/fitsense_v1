@@ -54,8 +54,8 @@ export function WebsiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-primary text-white selection:bg-accent-gold/30">
       {/* Navigation - Premium floating translucent glass */}
-      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl">
-        <div className="relative backdrop-blur-2xl backdrop-saturate-150 bg-black/30 border border-white/[0.1] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-4 sm:px-6 h-16 flex items-center justify-between overflow-hidden">
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl">
+        <div className="relative backdrop-blur-2xl backdrop-saturate-150 bg-black/30 border border-white/[0.1] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 sm:px-8 h-16 flex items-center justify-between overflow-hidden">
           {/* Inner glow highlight */}
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
           
