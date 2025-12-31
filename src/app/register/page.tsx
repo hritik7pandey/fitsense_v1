@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GlassInput, GlassButton } from '@/components/ui';
-import { Mail, Lock, User, ChevronLeft, Phone, CheckCircle, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Mail, User, ChevronLeft, Phone, CheckCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
@@ -287,7 +287,6 @@ export default function RegisterPage() {
                 <GlassInput 
                   label="Password" 
                   type="password" 
-                  icon={<Lock size={18} />}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

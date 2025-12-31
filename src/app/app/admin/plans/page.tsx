@@ -34,8 +34,29 @@ export default function AdminPlansPage() {
     name: '',
     description: '',
     price: '',
-    durationDays: ''
+    durationValue: '',
+    durationType: 'days' as 'days' | 'months' | 'years'
   });
+
+  // Convert duration to days based on type
+  const getDurationInDays = (value: number, type: 'days' | 'months' | 'years'): number => {
+    switch (type) {
+      case 'months': return value * 30;
+      case 'years': return value * 365;
+      default: return value;
+    }
+  };
+
+  // Convert days to best matching duration type
+  const getDurationFromDays = (days: number): { value: number; type: 'days' | 'months' | 'years' } => {
+    if (days >= 365 && days % 365 === 0) {
+      return { value: days / 365, type: 'years' };
+    }
+    if (days >= 30 && days % 30 === 0) {
+      return { value: days / 30, type: 'months' };
+    }
+    return { value: days, type: 'days' };
+  };
 
   useEffect(() => {
     loadPlans();
@@ -54,18 +75,20 @@ export default function AdminPlansPage() {
 
   const openCreateModal = () => {
     setEditingPlan(null);
-    setFormData({ name: '', description: '', price: '', durationDays: '' });
+    setFormData({ name: '', description: '', price: '', durationValue: '', durationType: 'days' });
     setShowModal(true);
     setError('');
   };
 
   const openEditModal = (plan: Plan) => {
     setEditingPlan(plan);
+    const duration = getDurationFromDays(plan.durationDays);
     setFormData({
       name: plan.name,
       description: plan.description || '',
       price: plan.price.toString(),
-      durationDays: plan.durationDays.toString()
+      durationValue: duration.value.toString(),
+      durationType: duration.type
     });
     setShowModal(true);
     setError('');
@@ -77,11 +100,16 @@ export default function AdminPlansPage() {
     setError('');
 
     try {
+      const durationDays = getDurationInDays(
+        parseInt(formData.durationValue),
+        formData.durationType
+      );
+
       const payload = {
         name: formData.name,
         description: formData.description || undefined,
         price: parseFloat(formData.price),
-        durationDays: parseInt(formData.durationDays)
+        durationDays
       };
 
       if (editingPlan) {
@@ -274,32 +302,66 @@ export default function AdminPlansPage() {
                   required
                 />
 
+                {/* Description Textarea */}
+                <div className="relative">
+                  <label className="block text-[10px] font-bold tracking-widest uppercase text-accent-blue mb-2 ml-1">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe the plan benefits, features, what's included..."
+                    rows={3}
+                    className="w-full bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-xl px-4 py-3 text-white text-base font-medium placeholder-white/40 focus:outline-none focus:bg-white/[0.1] focus:border-accent-blue/40 transition-all duration-200 resize-none"
+                  />
+                </div>
+
                 <GlassInput
-                  label="Description (Optional)"
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Plan benefits..."
+                  label="Price (₹)"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="999"
+                  required
                 />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <GlassInput
-                    label="Price (₹)"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="999"
-                    required
-                  />
-
-                  <GlassInput
-                    label="Duration (Days)"
-                    type="number"
-                    value={formData.durationDays}
-                    onChange={(e) => setFormData({ ...formData, durationDays: e.target.value })}
-                    placeholder="30"
-                    required
-                  />
+                {/* Duration with Type Selector */}
+                <div>
+                  <label className="block text-[10px] font-bold tracking-widest uppercase text-accent-blue mb-2 ml-1">
+                    Duration
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={formData.durationValue}
+                      onChange={(e) => setFormData({ ...formData, durationValue: e.target.value })}
+                      placeholder="1"
+                      min="1"
+                      required
+                      className="flex-1 bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-xl px-4 py-3 text-white text-base font-medium placeholder-white/40 focus:outline-none focus:bg-white/[0.1] focus:border-accent-blue/40 transition-all duration-200"
+                    />
+                    <div className="flex rounded-xl overflow-hidden border border-white/[0.1]">
+                      {(['days', 'months', 'years'] as const).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, durationType: type })}
+                          className={`px-4 py-3 text-sm font-medium transition-all capitalize ${
+                            formData.durationType === type
+                              ? 'bg-accent-blue text-white'
+                              : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.1]'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {formData.durationValue && (
+                    <p className="text-xs text-white/40 mt-2 ml-1">
+                      = {getDurationInDays(parseInt(formData.durationValue) || 0, formData.durationType)} days total
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">

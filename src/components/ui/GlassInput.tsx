@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, memo, useCallback } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface GlassInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
@@ -15,10 +16,15 @@ export const GlassInput = memo(function GlassInput({
   className = '', 
   value,
   placeholder,
+  type,
   ...props 
 }: GlassInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(!!value);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const isPasswordField = type === 'password';
+  const inputType = isPasswordField && showPassword ? 'text' : type;
 
   useEffect(() => {
     setHasValue(!!value && String(value).length > 0);
@@ -43,11 +49,16 @@ export const GlassInput = memo(function GlassInput({
     props.onChange?.(e);
   }, [props.onChange]);
 
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
+
   return (
     <div className={`relative mb-4 ${className}`}>
       <div className="relative">
         <input
           {...props}
+          type={inputType}
           value={value}
           placeholder={hasLabel ? undefined : placeholder}
           className={`
@@ -62,7 +73,7 @@ export const GlassInput = memo(function GlassInput({
               ? 'border-red-500/40 focus:border-red-500/60' 
               : 'border-white/[0.1] focus:border-accent-blue/40'
             }
-            ${icon ? 'pr-12' : ''}
+            ${icon || isPasswordField ? 'pr-12' : ''}
           `}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -89,8 +100,20 @@ export const GlassInput = memo(function GlassInput({
           </label>
         )}
         
-        {/* Icon */}
-        {icon && (
+        {/* Password Toggle Button */}
+        {isPasswordField && (
+          <button
+            type="button"
+            onClick={togglePasswordVisibility}
+            className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-150 hover:text-accent-blue ${isFocused ? 'text-accent-blue' : 'text-white/40'}`}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        )}
+        
+        {/* Icon (for non-password fields) */}
+        {icon && !isPasswordField && (
           <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-150 ${isFocused ? 'text-accent-blue' : 'text-white/30'}`}>
             {icon}
           </div>
