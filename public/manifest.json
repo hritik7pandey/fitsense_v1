@@ -1,0 +1,17 @@
+{
+  "name": "FitSense",
+  "short_name": "FitSense",
+  "description": "AI-powered fitness platform with personalized workouts and diet plans",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#4F9CFF",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
