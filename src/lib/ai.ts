@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite';
+const modelName = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
 const model = genAI.getGenerativeModel({
   model: modelName,
@@ -147,13 +147,16 @@ Generate ONLY this JSON structure (no extra text):
 Create exactly ${daysPerWeek} days with 5-6 exercises each. Use real gym exercises like squats, deadlifts, bench press, rows, pull-ups, shoulder press, lunges, curls, etc.`;
 
   try {
+    console.log('Generating workout with model:', modelName);
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     return safeJSONParse(text);
   } catch (error: any) {
-    console.error('AI Workout Generation Error:', error);
-    throw new Error('Failed to generate workout plan. Please try again.');
+    console.error('AI Workout Generation Error:', error?.message || error);
+    console.error('Model used:', modelName);
+    console.error('API Key present:', !!process.env.GEMINI_API_KEY);
+    throw new Error(`Failed to generate workout plan: ${error?.message || 'Unknown error'}`);
   }
 }
 
