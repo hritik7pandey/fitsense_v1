@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
         dietaryRestrictions,
         goals,
         mealsPerDay,
+        foodPreference,
       } = body;
 
       const targetUserId = userId || authUser.sub;
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
         dietaryRestrictions,
         goals,
         mealsPerDay,
+        foodPreference,
       });
 
       const isAssigned = authUser.role === 'ADMIN' && targetUserId !== authUser.sub;

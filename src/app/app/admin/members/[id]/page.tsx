@@ -102,6 +102,10 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('CASH');
   const [paymentNotes, setPaymentNotes] = useState('');
+  
+  // AI Generation state
+  const [generatingWorkout, setGeneratingWorkout] = useState(false);
+  const [generatingDiet, setGeneratingDiet] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -262,6 +266,64 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       toast.error(errorMsg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Quick AI Generation - Workout
+  const handleQuickGenerateWorkout = async () => {
+    setGeneratingWorkout(true);
+    setError('');
+    try {
+      await apiClient.post('/api/v1/workouts/generate-ai', {
+        userId: id,
+        age: member?.age,
+        gender: member?.gender,
+        heightCm: member?.heightCm,
+        weightKg: member?.weightKg,
+        fitnessLevel: 'intermediate',
+        goals: ['general fitness'],
+        equipment: ['gym equipment', 'dumbbells', 'barbells'],
+        daysPerWeek: 4,
+        sessionDuration: 45,
+        assignToUser: true,
+      });
+      toast.success('AI Workout generated and assigned!');
+      loadData();
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to generate workout';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setGeneratingWorkout(false);
+    }
+  };
+
+  // Quick AI Generation - Diet
+  const handleQuickGenerateDiet = async () => {
+    setGeneratingDiet(true);
+    setError('');
+    try {
+      await apiClient.post('/api/v1/diets/generate-ai', {
+        userId: id,
+        age: member?.age,
+        gender: member?.gender,
+        heightCm: member?.heightCm,
+        weightKg: member?.weightKg,
+        goals: ['maintain weight'],
+        dietaryRestrictions: [],
+        activityLevel: 'moderate',
+        mealsPerDay: 4,
+        foodPreference: 'both',
+        assignToUser: true,
+      });
+      toast.success('AI Diet plan generated and assigned!');
+      loadData();
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to generate diet plan';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setGeneratingDiet(false);
     }
   };
 
@@ -672,7 +734,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                 <button
                   onClick={() => router.push(`/app/admin/workout/ai-generate?userId=${id}`)}
                   className="p-2 rounded-lg bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20 transition-colors"
-                  title="Generate with AI"
+                  title="Customize AI Generation"
                 >
                   <Sparkles size={14} />
                 </button>
@@ -681,13 +743,32 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
             <div className="text-center py-4">
               <Dumbbell size={32} className="text-accent-blue/30 mx-auto mb-2" />
               <p className="text-white/40 text-sm mb-4">Assign a workout plan to this member</p>
-              <div className="flex gap-2 justify-center">
-                <GlassButton onClick={() => setShowWorkoutModal(true)} variant="glass">
-                  Assign Existing
+              <div className="flex flex-col gap-2">
+                <GlassButton 
+                  onClick={handleQuickGenerateWorkout}
+                  disabled={generatingWorkout}
+                  className="w-full !bg-gradient-to-r !from-accent-blue !to-accent-purple"
+                >
+                  {generatingWorkout ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={14} />
+                      Quick AI Generate & Assign
+                    </>
+                  )}
                 </GlassButton>
-                <GlassButton onClick={() => router.push(`/app/admin/workout/create?userId=${id}`)}>
-                  <Plus size={14} /> Create New
-                </GlassButton>
+                <div className="flex gap-2">
+                  <GlassButton onClick={() => setShowWorkoutModal(true)} variant="glass" className="flex-1">
+                    Assign Existing
+                  </GlassButton>
+                  <GlassButton onClick={() => router.push(`/app/admin/workout/ai-generate?userId=${id}`)} variant="glass" className="flex-1">
+                    Customize AI
+                  </GlassButton>
+                </div>
               </div>
             </div>
           </GlassCard>
@@ -713,7 +794,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                 <button
                   onClick={() => router.push(`/app/admin/diet/ai-generate?userId=${id}`)}
                   className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                  title="Generate with AI"
+                  title="Customize AI Generation"
                 >
                   <Sparkles size={14} />
                 </button>
@@ -722,13 +803,32 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
             <div className="text-center py-4">
               <Utensils size={32} className="text-green-400/30 mx-auto mb-2" />
               <p className="text-white/40 text-sm mb-4">Assign a diet plan to this member</p>
-              <div className="flex gap-2 justify-center">
-                <GlassButton onClick={() => setShowDietModal(true)} variant="glass">
-                  Assign Existing
+              <div className="flex flex-col gap-2">
+                <GlassButton 
+                  onClick={handleQuickGenerateDiet}
+                  disabled={generatingDiet}
+                  className="w-full !bg-gradient-to-r !from-green-500 !to-emerald-600"
+                >
+                  {generatingDiet ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={14} />
+                      Quick AI Generate & Assign
+                    </>
+                  )}
                 </GlassButton>
-                <GlassButton onClick={() => router.push(`/app/admin/diet/create?userId=${id}`)} className="!bg-gradient-to-r !from-green-500 !to-emerald-600">
-                  <Plus size={14} /> Create New
-                </GlassButton>
+                <div className="flex gap-2">
+                  <GlassButton onClick={() => setShowDietModal(true)} variant="glass" className="flex-1">
+                    Assign Existing
+                  </GlassButton>
+                  <GlassButton onClick={() => router.push(`/app/admin/diet/ai-generate?userId=${id}`)} variant="glass" className="flex-1">
+                    Customize AI
+                  </GlassButton>
+                </div>
               </div>
             </div>
           </GlassCard>
