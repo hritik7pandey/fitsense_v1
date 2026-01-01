@@ -15,6 +15,10 @@ const CACHEABLE_ENDPOINTS = [
   '/api/v1/diets/my-diets',
   '/api/v1/admin/members',
   '/api/v1/notifications',
+  '/api/v1/users/profile',
+  '/api/v1/schedules',
+  '/api/v1/workout-logs',
+  '/api/v1/diet-logs',
 ];
 
 // Cache durations for specific endpoints (in ms)
@@ -22,6 +26,11 @@ const CACHE_DURATIONS: Record<string, number> = {
   '/api/v1/membership/plans': 5 * 60 * 1000, // 5 minutes - plans rarely change
   '/api/v1/admin/stats': 30 * 1000, // 30 seconds - stats update frequently
   '/api/v1/membership/my-membership': 60 * 1000, // 1 minute
+  '/api/v1/users/profile': 2 * 60 * 1000, // 2 minutes - profile rarely changes
+  '/api/v1/schedules': 30 * 1000, // 30 seconds - for dashboard
+  '/api/v1/admin/members': 60 * 1000, // 1 minute
+  '/api/v1/workouts/my-workouts': 30 * 1000, // 30 seconds
+  '/api/v1/diets/my-diets': 30 * 1000, // 30 seconds
 };
 
 function shouldCache(endpoint: string): boolean {

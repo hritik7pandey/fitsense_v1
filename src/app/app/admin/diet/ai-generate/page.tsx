@@ -137,14 +137,15 @@ export default function AdminAiDietGeneratorPage() {
     }
   };
 
-  const handleConfirm = async () => {
-    if (!generatedContent || !selectedMember) return;
+  const handleConfirm = async (editedContent?: any) => {
+    const contentToSave = editedContent || generatedContent;
+    if (!contentToSave || !selectedMember) return;
     setSaving(true);
     try {
       await apiClient.post('/api/v1/diets', {
-        title: generatedContent.planName || 'AI Diet Plan',
-        description: generatedContent.description,
-        content: generatedContent,
+        title: contentToSave.planName || 'AI Diet Plan',
+        description: contentToSave.description,
+        content: contentToSave,
         userId: selectedMember,
         assignToUser: true,
       });

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -30,14 +30,25 @@ interface Member {
 
 export default function AdminMembersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>(
+    searchParams.get('status')?.toUpperCase() || 'ALL'
+  );
 
   useEffect(() => {
     loadMembers();
   }, []);
+
+  // Update filter when URL changes
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status) {
+      setStatusFilter(status.toUpperCase());
+    }
+  }, [searchParams]);
 
   const loadMembers = async () => {
     try {

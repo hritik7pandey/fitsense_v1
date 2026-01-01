@@ -98,14 +98,15 @@ export default function AiDietGeneratorPage() {
     }
   };
 
-  const handleConfirm = async () => {
-    if (!generatedContent) return;
+  const handleConfirm = async (editedContent?: any) => {
+    const contentToSave = editedContent || generatedContent;
+    if (!contentToSave) return;
     setSaving(true);
     try {
       const diet = await apiClient.post('/api/v1/diets', {
-        title: generatedContent.planName || 'AI Diet Plan',
-        description: generatedContent.description,
-        content: generatedContent,
+        title: contentToSave.planName || 'AI Diet Plan',
+        description: contentToSave.description,
+        content: contentToSave,
       });
       router.push(`/app/diet/${diet.id}`);
     } catch (err: any) {

@@ -116,7 +116,7 @@ export default function HomePage() {
       {/* Welcome Section with Streak */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-white/50 text-sm font-medium mb-1">{greeting}</p>
+          <p className="text-white/60 text-sm font-medium mb-1">{greeting}</p>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{user?.name?.split(' ')[0] || 'User'} 👋</h1>
         </div>
         <div className="text-right">
@@ -125,11 +125,11 @@ export default function HomePage() {
               <Flame size={20} className="text-orange-400" />
               <div>
                 <p className="text-lg font-bold text-orange-400">{todayData.streak}</p>
-                <p className="text-[10px] text-white/50">Day Streak</p>
+                <p className="text-[10px] text-white/60">Day Streak 🔥</p>
               </div>
             </div>
           ) : (
-            <p className="text-white/40 text-sm font-medium">
+            <p className="text-white/50 text-sm font-medium">
               {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
             </p>
           )}
@@ -186,9 +186,9 @@ export default function HomePage() {
                     )}
                   </div>
                   <h3 className="font-bold text-lg truncate tracking-tight">{todayData.todayWorkout.title}</h3>
-                  <p className="text-sm text-white/60">{todayData.todayWorkout.focus}</p>
-                  <p className="text-xs text-white/40 mt-1">
-                    {todayData.todayWorkout.exercises?.length || 0} exercises
+                  <p className="text-sm text-white/70">{todayData.todayWorkout.focus}</p>
+                  <p className="text-xs text-white/50 mt-1">
+                    💪 {todayData.todayWorkout.exercises?.length || 0} exercises
                   </p>
                 </div>
               </div>
@@ -216,9 +216,9 @@ export default function HomePage() {
                 <Dumbbell size={24} className="text-white/40" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-white/40 font-bold tracking-wider mb-1">NO ACTIVE PLAN</p>
+                <p className="text-xs text-white/50 font-bold tracking-wider mb-1">📋 NO ACTIVE PLAN</p>
                 <h3 className="font-bold tracking-tight">Set Up Your Workout</h3>
-                <p className="text-xs text-white/50 font-medium mt-1">Create or activate a workout plan to see it here</p>
+                <p className="text-xs text-white/60 font-medium mt-1">Create or activate a workout plan to see it here</p>
               </div>
               <ChevronRight size={20} className="text-white/30" />
             </div>
@@ -252,7 +252,7 @@ export default function HomePage() {
                 <Flame size={20} className="text-orange-400" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white">{todayData.todayDiet.dailyCalories} kcal</p>
-                  <p className="text-xs text-white/50">Daily Target</p>
+                  <p className="text-xs text-white/60">🎯 Daily Target</p>
                 </div>
                 {todayData.todayDiet.macros && (
                   <div className="flex gap-2 text-[10px]">
@@ -295,15 +295,15 @@ export default function HomePage() {
                         </div>
                         <div>
                           <h4 className="font-bold text-sm text-white">{meal.type}</h4>
-                          <p className="text-xs text-white/50 flex items-center gap-1">
-                            <Clock size={10} /> {meal.time}
+                          <p className="text-xs text-white/60 flex items-center gap-1">
+                            🕐 {meal.time}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <p className="text-sm font-bold text-green-400">{meal.totalCalories} kcal</p>
-                          <p className="text-[10px] text-white/40">{meal.items?.length || 0} items</p>
+                          <p className="text-[10px] text-white/50">{meal.items?.length || 0} items</p>
                         </div>
                         {!isLogged && (
                           <button
@@ -356,9 +356,9 @@ export default function HomePage() {
                 <Utensils size={24} className="text-white/40" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-white/40 font-bold tracking-wider mb-1">NO ACTIVE PLAN</p>
+                <p className="text-xs text-white/50 font-bold tracking-wider mb-1">🍽️ NO ACTIVE PLAN</p>
                 <h3 className="font-bold tracking-tight">Set Up Your Diet</h3>
-                <p className="text-xs text-white/50 font-medium mt-1">Create or activate a diet plan to track meals</p>
+                <p className="text-xs text-white/60 font-medium mt-1">Create or activate a diet plan to track meals</p>
               </div>
               <ChevronRight size={20} className="text-white/30" />
             </div>
@@ -379,8 +379,8 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-accent-blue/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
               <Sparkles size={20} className="text-accent-blue" />
             </div>
-            <p className="font-bold text-sm tracking-wide">AI Workout</p>
-            <p className="text-xs text-white/50 font-medium">Generate plan</p>
+            <p className="font-bold text-sm tracking-wide">🤖 AI Workout</p>
+            <p className="text-xs text-white/60 font-medium">Generate plan</p>
           </div>
         </button>
         
@@ -395,8 +395,8 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
               <Utensils size={20} className="text-green-400" />
             </div>
-            <p className="font-bold text-sm tracking-wide">AI Diet</p>
-            <p className="text-xs text-white/50 font-medium">Meal plan</p>
+            <p className="font-bold text-sm tracking-wide">🥗 AI Diet</p>
+            <p className="text-xs text-white/60 font-medium">Meal plan</p>
           </div>
         </button>
       </div>
@@ -415,11 +415,11 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-accent-blue/10 rounded-xl text-center">
                 <p className="text-2xl font-bold text-accent-blue">{todayData?.workoutLogs?.length || 0}</p>
-                <p className="text-xs text-white/50">Workouts Done</p>
+                <p className="text-xs text-white/60">Workouts Done 💪</p>
               </div>
               <div className="p-3 bg-green-500/10 rounded-xl text-center">
                 <p className="text-2xl font-bold text-green-400">{todayData?.dietLogs?.length || 0}</p>
-                <p className="text-xs text-white/50">Meals Logged</p>
+                <p className="text-xs text-white/60">Meals Logged 🍽️</p>
               </div>
             </div>
           </GlassCard>
@@ -430,14 +430,14 @@ export default function HomePage() {
       <div className="grid grid-cols-2 gap-3">
         <GlassCard onClick={() => router.push('/app/membership')} className="cursor-pointer !p-4" animate={false}>
           <CalendarCheck size={20} className="text-accent-purple mb-3" />
-          <p className="font-bold text-sm tracking-wide">Membership</p>
-          <p className="text-xs text-white/50 font-medium">View status</p>
+          <p className="font-bold text-sm tracking-wide">📅 Membership</p>
+          <p className="text-xs text-white/60 font-medium">View status</p>
         </GlassCard>
         
         <GlassCard onClick={() => router.push('/app/profile')} className="cursor-pointer !p-4" animate={false}>
           <Target size={20} className="text-yellow-400 mb-3" />
-          <p className="font-bold text-sm tracking-wide">Profile</p>
-          <p className="text-xs text-white/50 font-medium">Settings</p>
+          <p className="font-bold text-sm tracking-wide">👤 Profile</p>
+          <p className="text-xs text-white/60 font-medium">Settings</p>
         </GlassCard>
       </div>
     </div>

@@ -112,28 +112,32 @@ export default function AdminDashboardPage() {
       value: stats?.totalMembers || 0, 
       icon: Users, 
       color: 'from-accent-blue to-blue-600',
-      textColor: 'text-accent-blue'
+      textColor: 'text-accent-blue',
+      path: '/app/admin/members'
     },
     { 
       label: 'Active Members', 
       value: stats?.activeMembers || 0, 
       icon: TrendingUp, 
       color: 'from-green-500 to-green-600',
-      textColor: 'text-green-400'
+      textColor: 'text-green-400',
+      path: '/app/admin/members?status=active'
     },
     { 
       label: 'Today\'s Check-ins', 
       value: stats?.todayCheckIns || 0, 
       icon: Calendar, 
       color: 'from-accent-purple to-purple-600',
-      textColor: 'text-accent-purple'
+      textColor: 'text-accent-purple',
+      path: '/app/admin/reports/checkins'
     },
     { 
       label: 'Total Revenue', 
       value: `₹${stats?.totalRevenue || 0}`, 
       icon: CreditCard, 
       color: 'from-yellow-500 to-orange-500',
-      textColor: 'text-yellow-400'
+      textColor: 'text-yellow-400',
+      path: '/app/admin/reports/revenue'
     },
   ];
 
@@ -782,11 +786,16 @@ export default function AdminDashboardPage() {
           className="grid grid-cols-2 gap-3"
         >
           {statCards.map((stat, index) => (
-            <GlassCard key={index} className="!p-4">
+            <GlassCard 
+              key={index} 
+              className="!p-4 cursor-pointer hover:bg-white/5 transition-colors"
+              onClick={() => router.push(stat.path)}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
                   <stat.icon size={18} className="text-white" />
                 </div>
+                <ChevronRight size={16} className="text-white/30" />
               </div>
               <p className={`text-2xl font-bold ${stat.textColor}`}>
                 {loading ? '-' : stat.value}

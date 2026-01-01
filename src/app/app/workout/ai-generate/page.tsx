@@ -90,15 +90,16 @@ export default function AiWorkoutGeneratorPage() {
     }
   };
 
-  const handleConfirm = async () => {
-    if (!generatedContent) return;
+  const handleConfirm = async (editedContent?: any) => {
+    const contentToSave = editedContent || generatedContent;
+    if (!contentToSave) return;
     setSaving(true);
     try {
-      // Save the generated workout
+      // Save the generated/edited workout
       const workout = await apiClient.post('/api/v1/workouts', {
-        title: generatedContent.planName || 'AI Workout Plan',
-        description: generatedContent.description,
-        content: generatedContent,
+        title: contentToSave.planName || 'AI Workout Plan',
+        description: contentToSave.description,
+        content: contentToSave,
       });
       router.push(`/app/workout/${workout.id}`);
     } catch (err: any) {

@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
   
+  // Disable source maps in production for security
+  productionBrowserSourceMaps: false,
+  
   // Image optimization configuration
   images: {
     remotePatterns: [
