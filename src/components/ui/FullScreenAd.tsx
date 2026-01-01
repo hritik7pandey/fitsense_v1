@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -29,32 +29,7 @@ export function FullScreenAd({
   const [showAd, setShowAd] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  useEffect(() => {
-    // Check if user has dismissed this ad session
-    const dismissedAds = sessionStorage.getItem('dismissedAds');
-    if (dismissedAds) {
-      const dismissed = JSON.parse(dismissedAds);
-      if (dismissed[currentPage]) {
-        setDismissed(true);
-        return;
-      }
-    }
-    
-    loadBanner();
-  }, [currentPage]);
-
-  useEffect(() => {
-    if (banner && !dismissed) {
-      // Show ad after delay
-      const timer = setTimeout(() => {
-        setShowAd(true);
-      }, showDelay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [banner, dismissed, showDelay]);
-
-  const loadBanner = async () => {
+  const loadBanner = useCallback(async () => {
     try {
       const response = await fetch('/api/v1/banners');
       const data = await response.json();
@@ -75,7 +50,36 @@ export function FullScreenAd({
     } catch (error) {
       console.error('Failed to load banner:', error);
     }
-  };
+  }, [currentPage]);
+
+  useEffect(() => {
+    // Check if user has dismissed this ad session
+    const dismissedAds = sessionStorage.getItem('dismissedAds');
+    if (dismissedAds) {
+      try {
+        const dismissed = JSON.parse(dismissedAds);
+        if (dismissed[currentPage]) {
+          setDismissed(true);
+          return;
+        }
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
+    }
+    
+    loadBanner();
+  }, [currentPage, loadBanner]);
+
+  useEffect(() => {
+    if (banner && !dismissed) {
+      // Show ad after delay
+      const timer = setTimeout(() => {
+        setShowAd(true);
+      }, showDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [banner, dismissed, showDelay]);
 
   const handleDismiss = () => {
     setShowAd(false);

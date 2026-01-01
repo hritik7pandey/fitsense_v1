@@ -45,17 +45,22 @@ export function BannerDisplay({
   }, []);
 
   // Filter out banners with broken images
-  const validBanners = banners.filter(b => !imageErrors.has(b.id));
+  const validBanners = React.useMemo(() => 
+    banners.filter(b => !imageErrors.has(b.id)), 
+    [banners, imageErrors]
+  );
+
+  const validBannersLength = validBanners.length;
 
   useEffect(() => {
-    if (!autoSlide || validBanners.length <= 1) return;
+    if (!autoSlide || validBannersLength <= 1) return;
     
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % validBanners.length);
+      setCurrentIndex((prev) => (prev + 1) % validBannersLength);
     }, slideInterval);
 
     return () => clearInterval(interval);
-  }, [autoSlide, validBanners.length, slideInterval]);
+  }, [autoSlide, validBannersLength, slideInterval]);
 
   const loadBanners = async () => {
     try {
