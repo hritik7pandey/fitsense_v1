@@ -1,23 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
-import { ChevronLeft, Clock, Dumbbell, Loader2, Trash2, Sparkles, Target, Flame, CheckCircle, Play, Calendar } from 'lucide-react';
+import { ChevronLeft, Clock, Dumbbell, Loader2, Trash2, Sparkles, Target, Flame, CheckCircle, User } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { motion } from 'framer-motion';
-import WorkoutSession from '@/components/workout/WorkoutSession';
-import WorkoutReport from '@/components/workout/WorkoutReport';
-
-interface WorkoutSummary {
-  duration: number;
-  totalSets: number;
-  totalReps: number;
-  totalVolume: number;
-  exercisesCompleted: number;
-  exerciseLogs: any[];
-}
+import { useToast } from '@/lib/toast-context';
 
 interface Exercise {
   name: string;
@@ -39,28 +29,23 @@ interface WorkoutContent {
   planName?: string;
   description?: string;
   difficulty?: string;
-  duration?: string;
   schedule?: ScheduleDay[];
   exercises?: Exercise[];
   tips?: string[];
 }
 
-export default function WorkoutDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function AdminWorkoutDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const toast = useToast();
+  const userId = searchParams.get('userId');
+  
   const [workout, setWorkout] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [activeDay, setActiveDay] = useState(0);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [activating, setActivating] = useState(false);
-  
-  // Workout session state
-  const [showWorkoutSession, setShowWorkoutSession] = useState(false);
-  const [workoutSummary, setWorkoutSummary] = useState<WorkoutSummary | null>(null);
-  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     if (id) loadWorkout();
@@ -78,45 +63,22 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const activateWorkout = async () => {
-    setActivating(true);
-    try {
-      await apiClient.post('/api/v1/schedules', {
-        type: 'workout',
-        workoutId: id,
-        startDate
-      });
-      alert('Workout activated! It will now appear on your dashboard.');
-      setShowScheduleModal(false);
-    } catch (err) {
-      alert('Failed to activate workout');
-    } finally {
-      setActivating(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!workout || !window.confirm('Delete this workout?')) return;
     setDeleting(true);
     try {
       await apiClient.delete(`/api/v1/workouts/${workout.id}`);
-      router.push('/app/workout');
+      toast.success('Workout deleted successfully');
+      if (userId) {
+        router.push(`/app/admin/members/${userId}`);
+      } else {
+        router.back();
+      }
     } catch (err) {
-      alert('Failed to delete workout');
+      toast.error('Failed to delete workout');
     } finally {
       setDeleting(false);
     }
-  };
-
-  const getCurrentExercises = (): Exercise[] => {
-    const content: WorkoutContent = typeof workout?.content === 'string' 
-      ? JSON.parse(workout.content) 
-      : workout?.content || {};
-    
-    if (content.schedule && content.schedule.length > 0) {
-      return content.schedule[activeDay]?.exercises || [];
-    }
-    return content.exercises || [];
   };
 
   if (loading) {
@@ -135,7 +97,7 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
         </div>
         <h2 className="text-xl font-bold mb-2 text-white">Workout Not Found</h2>
         <p className="text-white/50 mb-6">{error || 'This workout may have been deleted'}</p>
-        <GlassButton onClick={() => router.push('/app/workout')}>Back to Workouts</GlassButton>
+        <GlassButton onClick={() => router.back()}>Go Back</GlassButton>
       </div>
     );
   }
@@ -160,22 +122,25 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
       <div className="relative bg-gradient-to-b from-accent-blue/20 to-transparent pt-4 pb-8 px-4">
         <div className="absolute top-0 right-0 w-40 h-40 bg-accent-blue/10 rounded-full blur-3xl" />
         
-        <div className="relative z-10 flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
           <button 
-            onClick={() => router.back()} 
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors"
+            onClick={() => userId ? router.push(`/app/admin/members/${userId}`) : router.back()} 
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10"
           >
             <ChevronLeft size={20} />
           </button>
-          {!workout.isAssigned && (
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-accent-purple/20 border border-accent-purple/30 rounded-full text-accent-purple text-xs font-bold">
+              Admin View
+            </span>
             <button 
               onClick={handleDelete} 
               disabled={deleting} 
-              className="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors cursor-pointer"
+              className="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20"
             >
               {deleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
             </button>
-          )}
+          </div>
         </div>
         
         <div className="flex items-start gap-4">
@@ -184,13 +149,8 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="flex-1">
             {isAiGenerated && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-purple/20 border border-accent-purple/30 text-accent-purple rounded text-xs font-bold mb-2 mr-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-purple/20 border border-accent-purple/30 text-accent-purple rounded text-xs font-bold mb-2">
                 <Sparkles size={10} /> AI GENERATED
-              </span>
-            )}
-            {workout.isAssigned && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 border border-green-500/30 text-green-400 rounded text-xs font-bold mb-2">
-                <CheckCircle size={10} /> ASSIGNED BY ADMIN
               </span>
             )}
             <h1 className="text-xl font-bold mb-1 text-white">{workout.title || content.planName || 'Workout Plan'}</h1>
@@ -199,9 +159,22 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
         </div>
+
+        {/* Member Info */}
+        {workout.user && (
+          <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-accent-blue/20 flex items-center justify-center">
+              <User size={18} className="text-accent-blue" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">{workout.user.name}</p>
+              <p className="text-xs text-white/40">{workout.user.email}</p>
+            </div>
+          </div>
+        )}
         
         {/* Stats */}
-        <div className="flex gap-3 mt-6 overflow-x-auto no-scrollbar">
+        <div className="flex gap-3 mt-4 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-2 px-4 py-2.5 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 flex-shrink-0">
             <Target size={16} className="text-accent-blue" />
             <span className="text-sm font-medium text-white">{schedule.length || 1} Days</span>
@@ -216,119 +189,7 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
         </div>
-
-        {/* Start/Stop Workout Button */}
-        <div className="mt-6 space-y-3">
-          <GlassButton 
-            fullWidth 
-            onClick={() => setShowWorkoutSession(true)}
-            className="!bg-gradient-to-r !from-green-500 !to-emerald-600 !py-4"
-          >
-            <Play size={20} />
-            <span className="font-bold">Start Workout</span>
-          </GlassButton>
-          
-          <GlassButton 
-            fullWidth 
-            onClick={() => setShowScheduleModal(true)}
-            className="!bg-accent-blue/20 !border-accent-blue/30"
-          >
-            <Calendar size={18} />
-            <span>Activate This Plan</span>
-          </GlassButton>
-        </div>
       </div>
-
-      {/* Schedule Modal */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md bg-primary border border-white/10 rounded-2xl p-6"
-          >
-            <h3 className="text-xl font-bold mb-2 text-white">Activate Workout Plan</h3>
-            <p className="text-sm text-white/60 mb-6">
-              Set a start date for this workout. It will appear on your dashboard day by day.
-            </p>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-white/70 mb-2">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-accent-blue"
-              />
-              <p className="text-xs text-white/40 mt-2">
-                Day 1 will start on this date. The plan will cycle through all {schedule.length || 1} days.
-              </p>
-            </div>
-            
-            <div className="flex gap-3">
-              <GlassButton 
-                onClick={() => setShowScheduleModal(false)}
-                className="flex-1 !bg-white/5"
-              >
-                Cancel
-              </GlassButton>
-              <GlassButton 
-                onClick={activateWorkout}
-                disabled={activating}
-                className="flex-1 !bg-accent-blue"
-              >
-                {activating ? <Loader2 size={18} className="animate-spin" /> : 'Activate'}
-              </GlassButton>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Workout Session Modal */}
-      {showWorkoutSession && (
-        <WorkoutSession
-          exercises={getCurrentExercises()}
-          workoutName={workout.title || content.planName || 'Workout'}
-          onClose={() => setShowWorkoutSession(false)}
-          onComplete={async (summary) => {
-            console.log('Workout completed:', summary);
-            setShowWorkoutSession(false);
-            setWorkoutSummary(summary);
-            setShowReport(true);
-            
-            // Save workout log to API
-            try {
-              await apiClient.post('/api/v1/workout-logs', {
-                workoutId: workout.id,
-                dayIndex: activeDay,
-                duration: summary.duration,
-                totalSets: summary.totalSets,
-                totalReps: summary.totalReps,
-                totalVolume: summary.totalVolume,
-                exercisesCompleted: summary.exercisesCompleted,
-                exerciseLogs: summary.exerciseLogs,
-              });
-            } catch (err) {
-              console.error('Failed to save workout log:', err);
-            }
-          }}
-        />
-      )}
-
-      {/* Workout Report Modal */}
-      {showReport && workoutSummary && (
-        <WorkoutReport
-          workoutName={workout.title || content.planName || 'Workout'}
-          duration={workoutSummary.duration}
-          totalSets={workoutSummary.totalSets}
-          totalReps={workoutSummary.totalReps}
-          totalVolume={workoutSummary.totalVolume}
-          exercisesCompleted={workoutSummary.exercisesCompleted}
-          totalExercises={getCurrentExercises().length}
-          exerciseLogs={workoutSummary.exerciseLogs}
-          onClose={() => setShowReport(false)}
-        />
-      )}
 
       <div className="px-4 space-y-4">
         {/* Day Selector */}
@@ -358,7 +219,6 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
             animate={{ opacity: 1, x: 0 }} 
             className="space-y-4"
           >
-            {/* Day Overview */}
             <GlassCard className="!p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -371,7 +231,6 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </GlassCard>
 
-            {/* Warmup */}
             {currentDay.warmup && (
               <div className="flex items-center gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
                 <Clock size={16} className="text-yellow-400" />
@@ -379,7 +238,6 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
-            {/* Exercises */}
             <div className="space-y-3">
               {currentDay.exercises?.map((exercise: Exercise, index: number) => (
                 <motion.div 
@@ -412,7 +270,6 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               ))}
             </div>
 
-            {/* Cooldown */}
             {currentDay.cooldown && (
               <div className="flex items-center gap-3 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-xl">
                 <CheckCircle size={16} className="text-green-400" />
@@ -450,26 +307,20 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Tips */}
         {content.tips && content.tips.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <GlassCard className="!p-4">
-              <h4 className="font-bold mb-3 flex items-center gap-2 text-white">
-                <Sparkles size={16} className="text-yellow-400" />
-                Pro Tips
-              </h4>
-              <ul className="space-y-2">
-                {content.tips.map((tip: string, i: number) => (
-                  <li key={i} className="text-sm text-white/70 flex items-start gap-2">
-                    <span className="text-accent-blue mt-0.5">•</span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </GlassCard>
-          </motion.div>
+          <GlassCard className="!p-4">
+            <h4 className="font-bold mb-3 flex items-center gap-2 text-white">
+              <Sparkles size={16} className="text-yellow-400" />
+              Pro Tips
+            </h4>
+            <ul className="space-y-2">
+              {content.tips.map((tip: string, i: number) => (
+                <li key={i} className="text-sm text-white/70 flex items-start gap-2">
+                  <span className="text-accent-blue mt-0.5">•</span>
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
         )}
       </div>
     </div>

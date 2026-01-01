@@ -3,12 +3,11 @@
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { 
-  ChevronLeft, User, Mail, Phone, CreditCard, Calendar, 
-  CheckCircle, XCircle, Crown, Trash2, Loader2, Save, AlertTriangle,
-  Dumbbell, Utensils, Sparkles, Plus, Wallet, IndianRupee, Ban, 
+  ChevronLeft, Mail, Phone, CreditCard, 
+  CheckCircle, XCircle, Crown, Trash2, Loader2, AlertTriangle,
+  Dumbbell, Utensils, Sparkles, Wallet, IndianRupee, Ban, 
   ShieldCheck, MessageCircle
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -60,20 +59,22 @@ interface Plan {
 
 interface Workout {
   id: string;
-  name: string;
+  title: string;
   description?: string;
-  exercises: any[];
+  content: any;
   source: string;
   isAssigned: boolean;
+  createdAt: string;
 }
 
 interface Diet {
   id: string;
-  name: string;
+  title: string;
   description?: string;
-  meals: any[];
+  content: any;
   source: string;
   isAssigned: boolean;
+  createdAt: string;
 }
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -89,8 +90,10 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const [selectedPlan, setSelectedPlan] = useState('');
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [showDietModal, setShowDietModal] = useState(false);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [diets, setDiets] = useState<Diet[]>([]);
+  const [allWorkouts, setAllWorkouts] = useState<Workout[]>([]);
+  const [allDiets, setAllDiets] = useState<Diet[]>([]);
+  const [memberWorkouts, setMemberWorkouts] = useState<Workout[]>([]);
+  const [memberDiets, setMemberDiets] = useState<Diet[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState('');
   const [selectedDiet, setSelectedDiet] = useState('');
   
@@ -102,10 +105,6 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('CASH');
   const [paymentNotes, setPaymentNotes] = useState('');
-  
-  // AI Generation state
-  const [generatingWorkout, setGeneratingWorkout] = useState(false);
-  const [generatingDiet, setGeneratingDiet] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -113,22 +112,33 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
 
   const loadData = async () => {
     try {
-      const [memberData, plansData, workoutsData, dietsData, paymentsData] = await Promise.all([
+      const [memberData, plansData, allWorkoutsData, allDietsData, memberWorkoutsData, memberDietsData, paymentsData] = await Promise.all([
         apiClient.get(`/api/v1/admin/members/${id}`),
         apiClient.get('/api/v1/membership/plans?includeInactive=true'),
         apiClient.get('/api/v1/workouts'),
         apiClient.get('/api/v1/diets'),
+        apiClient.get(`/api/v1/workouts?userId=${id}`),
+        apiClient.get(`/api/v1/diets?userId=${id}`),
         apiClient.get(`/api/v1/admin/members/${id}/payments`).catch(() => ({ payments: [], membership: null }))
       ]);
       setMember(memberData);
       setPlans(Array.isArray(plansData) ? plansData : []);
       
-      // Filter workouts that are not already assigned to other users
-      const workoutsList = workoutsData?.data || workoutsData || [];
-      setWorkouts(Array.isArray(workoutsList) ? workoutsList : []);
+      // All workouts for assignment
+      const workoutsList = allWorkoutsData?.workouts || allWorkoutsData?.data || allWorkoutsData || [];
+      setAllWorkouts(Array.isArray(workoutsList) ? workoutsList : []);
       
-      const dietsList = dietsData?.data || dietsData || [];
-      setDiets(Array.isArray(dietsList) ? dietsList : []);
+      // All diets for assignment
+      const dietsList = allDietsData?.diets || allDietsData?.data || allDietsData || [];
+      setAllDiets(Array.isArray(dietsList) ? dietsList : []);
+      
+      // Member's assigned workouts
+      const memberWorkoutsList = memberWorkoutsData?.workouts || memberWorkoutsData?.data || memberWorkoutsData || [];
+      setMemberWorkouts(Array.isArray(memberWorkoutsList) ? memberWorkoutsList : []);
+      
+      // Member's assigned diets
+      const memberDietsList = memberDietsData?.diets || memberDietsData?.data || memberDietsData || [];
+      setMemberDiets(Array.isArray(memberDietsList) ? memberDietsList : []);
       
       // Set payments data
       setPayments(paymentsData.currentPayments || []);
@@ -266,64 +276,6 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       toast.error(errorMsg);
     } finally {
       setSaving(false);
-    }
-  };
-
-  // Quick AI Generation - Workout
-  const handleQuickGenerateWorkout = async () => {
-    setGeneratingWorkout(true);
-    setError('');
-    try {
-      await apiClient.post('/api/v1/workouts/generate-ai', {
-        userId: id,
-        age: member?.age,
-        gender: member?.gender,
-        heightCm: member?.heightCm,
-        weightKg: member?.weightKg,
-        fitnessLevel: 'intermediate',
-        goals: ['general fitness'],
-        equipment: ['gym equipment', 'dumbbells', 'barbells'],
-        daysPerWeek: 4,
-        sessionDuration: 45,
-        assignToUser: true,
-      });
-      toast.success('AI Workout generated and assigned!');
-      loadData();
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to generate workout';
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setGeneratingWorkout(false);
-    }
-  };
-
-  // Quick AI Generation - Diet
-  const handleQuickGenerateDiet = async () => {
-    setGeneratingDiet(true);
-    setError('');
-    try {
-      await apiClient.post('/api/v1/diets/generate-ai', {
-        userId: id,
-        age: member?.age,
-        gender: member?.gender,
-        heightCm: member?.heightCm,
-        weightKg: member?.weightKg,
-        goals: ['maintain weight'],
-        dietaryRestrictions: [],
-        activityLevel: 'moderate',
-        mealsPerDay: 4,
-        foodPreference: 'both',
-        assignToUser: true,
-      });
-      toast.success('AI Diet plan generated and assigned!');
-      loadData();
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to generate diet plan';
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setGeneratingDiet(false);
     }
   };
 
@@ -721,55 +673,60 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           transition={{ delay: 0.4 }}
         >
           <GlassCard className="!p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">Workout Plan</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => router.push(`/app/admin/workout/create?userId=${id}`)}
-                  className="p-2 rounded-lg bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
-                  title="Create Custom Workout"
-                >
-                  <Plus size={14} />
-                </button>
-                <button
-                  onClick={() => router.push(`/app/admin/workout/ai-generate?userId=${id}`)}
-                  className="p-2 rounded-lg bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20 transition-colors"
-                  title="Customize AI Generation"
-                >
-                  <Sparkles size={14} />
-                </button>
+            <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Workout Plans</h3>
+            
+            {/* Member's Current Workouts */}
+            {memberWorkouts.length > 0 ? (
+              <div className="space-y-2 mb-4">
+                {memberWorkouts.slice(0, 3).map((workout) => (
+                  <button
+                    key={workout.id}
+                    onClick={() => router.push(`/app/admin/workout/${workout.id}?userId=${id}`)}
+                    className="w-full p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
+                          <Dumbbell size={16} className="text-accent-blue" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">{workout.title}</p>
+                          <p className="text-xs text-white/40">
+                            {workout.source === 'AI' ? '✨ AI Generated' : workout.source} • {new Date(workout.createdAt).toLocaleDateString('en-IN')}
+                          </p>
+                        </div>
+                      </div>
+                      {workout.source === 'AI' && <Sparkles size={14} className="text-accent-purple" />}
+                    </div>
+                  </button>
+                ))}
+                {memberWorkouts.length > 3 && (
+                  <p className="text-xs text-white/30 text-center">+{memberWorkouts.length - 3} more workouts</p>
+                )}
               </div>
-            </div>
-            <div className="text-center py-4">
-              <Dumbbell size={32} className="text-accent-blue/30 mx-auto mb-2" />
-              <p className="text-white/40 text-sm mb-4">Assign a workout plan to this member</p>
-              <div className="flex flex-col gap-2">
-                <GlassButton 
-                  onClick={handleQuickGenerateWorkout}
-                  disabled={generatingWorkout}
-                  className="w-full !bg-gradient-to-r !from-accent-blue !to-accent-purple"
-                >
-                  {generatingWorkout ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={14} />
-                      Quick AI Generate & Assign
-                    </>
-                  )}
-                </GlassButton>
-                <div className="flex gap-2">
-                  <GlassButton onClick={() => setShowWorkoutModal(true)} variant="glass" className="flex-1">
-                    Assign Existing
-                  </GlassButton>
-                  <GlassButton onClick={() => router.push(`/app/admin/workout/ai-generate?userId=${id}`)} variant="glass" className="flex-1">
-                    Customize AI
-                  </GlassButton>
-                </div>
+            ) : (
+              <div className="text-center py-4 mb-4">
+                <Dumbbell size={32} className="text-accent-blue/30 mx-auto mb-2" />
+                <p className="text-white/40 text-sm">No workout plans assigned yet</p>
               </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <GlassButton 
+                onClick={() => router.push(`/app/admin/workout/ai-generate?userId=${id}`)}
+                className="flex-1 !bg-gradient-to-r !from-accent-blue !to-accent-purple"
+              >
+                <Sparkles size={14} />
+                Generate with AI
+              </GlassButton>
+              <GlassButton 
+                onClick={() => router.push(`/app/admin/workout/create?userId=${id}`)} 
+                variant="glass" 
+                className="flex-1"
+              >
+                Create Custom
+              </GlassButton>
             </div>
           </GlassCard>
         </motion.div>
@@ -781,55 +738,60 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           transition={{ delay: 0.5 }}
         >
           <GlassCard className="!p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">Diet Plan</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => router.push(`/app/admin/diet/create?userId=${id}`)}
-                  className="p-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
-                  title="Create Custom Diet"
-                >
-                  <Plus size={14} />
-                </button>
-                <button
-                  onClick={() => router.push(`/app/admin/diet/ai-generate?userId=${id}`)}
-                  className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                  title="Customize AI Generation"
-                >
-                  <Sparkles size={14} />
-                </button>
+            <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Diet Plans</h3>
+            
+            {/* Member's Current Diets */}
+            {memberDiets.length > 0 ? (
+              <div className="space-y-2 mb-4">
+                {memberDiets.slice(0, 3).map((diet) => (
+                  <button
+                    key={diet.id}
+                    onClick={() => router.push(`/app/admin/diet/${diet.id}?userId=${id}`)}
+                    className="w-full p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                          <Utensils size={16} className="text-green-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">{diet.title}</p>
+                          <p className="text-xs text-white/40">
+                            {diet.source === 'AI' ? '✨ AI Generated' : diet.source} • {new Date(diet.createdAt).toLocaleDateString('en-IN')}
+                          </p>
+                        </div>
+                      </div>
+                      {diet.source === 'AI' && <Sparkles size={14} className="text-green-400" />}
+                    </div>
+                  </button>
+                ))}
+                {memberDiets.length > 3 && (
+                  <p className="text-xs text-white/30 text-center">+{memberDiets.length - 3} more diet plans</p>
+                )}
               </div>
-            </div>
-            <div className="text-center py-4">
-              <Utensils size={32} className="text-green-400/30 mx-auto mb-2" />
-              <p className="text-white/40 text-sm mb-4">Assign a diet plan to this member</p>
-              <div className="flex flex-col gap-2">
-                <GlassButton 
-                  onClick={handleQuickGenerateDiet}
-                  disabled={generatingDiet}
-                  className="w-full !bg-gradient-to-r !from-green-500 !to-emerald-600"
-                >
-                  {generatingDiet ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={14} />
-                      Quick AI Generate & Assign
-                    </>
-                  )}
-                </GlassButton>
-                <div className="flex gap-2">
-                  <GlassButton onClick={() => setShowDietModal(true)} variant="glass" className="flex-1">
-                    Assign Existing
-                  </GlassButton>
-                  <GlassButton onClick={() => router.push(`/app/admin/diet/ai-generate?userId=${id}`)} variant="glass" className="flex-1">
-                    Customize AI
-                  </GlassButton>
-                </div>
+            ) : (
+              <div className="text-center py-4 mb-4">
+                <Utensils size={32} className="text-green-400/30 mx-auto mb-2" />
+                <p className="text-white/40 text-sm">No diet plans assigned yet</p>
               </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <GlassButton 
+                onClick={() => router.push(`/app/admin/diet/ai-generate?userId=${id}`)}
+                className="flex-1 !bg-gradient-to-r !from-green-500 !to-emerald-600"
+              >
+                <Sparkles size={14} />
+                Generate with AI
+              </GlassButton>
+              <GlassButton 
+                onClick={() => router.push(`/app/admin/diet/create?userId=${id}`)} 
+                variant="glass" 
+                className="flex-1"
+              >
+                Create Custom
+              </GlassButton>
             </div>
           </GlassCard>
         </motion.div>
@@ -900,7 +862,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
               <h3 className="text-lg font-bold mb-4 text-white">Assign Workout</h3>
               
               <div className="space-y-3 mb-6">
-                {workouts.length === 0 ? (
+                {allWorkouts.length === 0 ? (
                   <div className="text-center py-4">
                     <p className="text-white/40 text-sm">No workouts available</p>
                     <GlassButton 
@@ -915,7 +877,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                     </GlassButton>
                   </div>
                 ) : (
-                  workouts.map((workout) => (
+                  allWorkouts.map((workout) => (
                     <button
                       key={workout.id}
                       onClick={() => setSelectedWorkout(workout.id)}
@@ -927,9 +889,9 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-white">{workout.name}</p>
+                          <p className="font-semibold text-white">{workout.title}</p>
                           <p className="text-xs text-white/40">
-                            {workout.exercises?.length || 0} exercises • {workout.source}
+                            {workout.source === 'AI' ? '✨ AI Generated' : workout.source}
                           </p>
                         </div>
                         {workout.source === 'AI' && <Sparkles size={14} className="text-accent-purple" />}
@@ -972,7 +934,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
               <h3 className="text-lg font-bold mb-4 text-white">Assign Diet</h3>
               
               <div className="space-y-3 mb-6">
-                {diets.length === 0 ? (
+                {allDiets.length === 0 ? (
                   <div className="text-center py-4">
                     <p className="text-white/40 text-sm">No diet plans available</p>
                     <GlassButton 
@@ -987,7 +949,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                     </GlassButton>
                   </div>
                 ) : (
-                  diets.map((diet) => (
+                  allDiets.map((diet) => (
                     <button
                       key={diet.id}
                       onClick={() => setSelectedDiet(diet.id)}
@@ -999,9 +961,9 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-white">{diet.name}</p>
+                          <p className="font-semibold text-white">{diet.title}</p>
                           <p className="text-xs text-white/40">
-                            {diet.meals?.length || 0} meals • {diet.source}
+                            {diet.source === 'AI' ? '✨ AI Generated' : diet.source}
                           </p>
                         </div>
                         {diet.source === 'AI' && <Sparkles size={14} className="text-green-400" />}

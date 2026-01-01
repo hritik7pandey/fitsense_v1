@@ -7,6 +7,8 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { Bot, ChevronLeft, Sparkles, Dumbbell, Loader2, Zap, Target, Clock, Flame, User, Users } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { motion } from 'framer-motion';
+import WorkoutPreview from '@/components/workout/WorkoutPreview';
+import { useToast } from '@/lib/toast-context';
 
 interface Member {
   id: string;
@@ -21,9 +23,11 @@ interface Member {
 export default function AdminAiWorkoutGeneratorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const toast = useToast();
   const preselectedUserId = searchParams.get('userId');
   
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [workoutType, setWorkoutType] = useState('Strength');
   const [difficulty, setDifficulty] = useState(50);
@@ -33,6 +37,10 @@ export default function AdminAiWorkoutGeneratorPage() {
   const [selectedMember, setSelectedMember] = useState<string>(preselectedUserId || '');
   const [selectedMemberData, setSelectedMemberData] = useState<Member | null>(null);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  
+  // Preview state
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadMembers();
@@ -51,7 +59,6 @@ export default function AdminAiWorkoutGeneratorPage() {
       const membersList = Array.isArray(data) ? data : [];
       setMembers(membersList);
       
-      // If preselected user, find their data
       if (preselectedUserId) {
         const member = membersList.find((m: Member) => m.id === preselectedUserId);
         setSelectedMemberData(member || null);
@@ -76,6 +83,18 @@ export default function AdminAiWorkoutGeneratorPage() {
     { id: 'Flexibility', icon: Flame, color: 'from-yellow-500/20 to-orange-500/20', border: 'border-yellow-500/30' },
   ];
 
+  const generateParams = {
+    age: selectedMemberData?.age,
+    gender: selectedMemberData?.gender,
+    heightCm: selectedMemberData?.heightCm,
+    weightKg: selectedMemberData?.weightKg,
+    fitnessLevel: getFitnessLevel(),
+    goals: [workoutType.toLowerCase()],
+    equipment: ['gym equipment', 'dumbbells', 'barbells'],
+    daysPerWeek,
+    sessionDuration: duration,
+  };
+
   const handleGenerate = async () => {
     if (!selectedMember) {
       setError('Please select a member first');
@@ -85,22 +104,9 @@ export default function AdminAiWorkoutGeneratorPage() {
     setLoading(true);
     setError('');
     try {
-      const workout = await apiClient.post('/api/v1/workouts/generate-ai', {
-        userId: selectedMember,
-        age: selectedMemberData?.age,
-        gender: selectedMemberData?.gender,
-        heightCm: selectedMemberData?.heightCm,
-        weightKg: selectedMemberData?.weightKg,
-        fitnessLevel: getFitnessLevel(),
-        goals: [workoutType.toLowerCase()],
-        equipment: ['gym equipment', 'dumbbells', 'barbells'],
-        daysPerWeek,
-        sessionDuration: duration,
-        assignToUser: true,
-      });
-      
-      // Redirect back to member detail page
-      router.push(`/app/admin/members/${selectedMember}`);
+      const response = await apiClient.post('/api/v1/workouts/generate-ai-preview', generateParams);
+      setGeneratedContent(response);
+      setShowPreview(true);
     } catch (err: any) {
       setError(err.message || 'Failed to generate workout. Please try again.');
     } finally {
@@ -108,8 +114,58 @@ export default function AdminAiWorkoutGeneratorPage() {
     }
   };
 
+  const handleRegenerate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await apiClient.post('/api/v1/workouts/generate-ai-preview', generateParams);
+      setGeneratedContent(response);
+    } catch (err: any) {
+      setError(err.message || 'Failed to regenerate workout.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!generatedContent || !selectedMember) return;
+    setSaving(true);
+    try {
+      await apiClient.post('/api/v1/workouts', {
+        title: generatedContent.planName || 'AI Workout Plan',
+        description: generatedContent.description,
+        content: generatedContent,
+        userId: selectedMember,
+        assignToUser: true,
+      });
+      toast.success('Workout generated and assigned successfully!');
+      router.push(`/app/admin/members/${selectedMember}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save workout.');
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowPreview(false);
+    setGeneratedContent(null);
+  };
+
   return (
     <div className="min-h-screen pb-24">
+      {/* Preview Modal */}
+      {showPreview && generatedContent && (
+        <WorkoutPreview
+          content={generatedContent}
+          onConfirm={handleConfirm}
+          onRegenerate={handleRegenerate}
+          onCancel={handleCancel}
+          isConfirming={saving}
+          isRegenerating={loading}
+          confirmLabel="Assign to Member"
+        />
+      )}
+
       {/* Header */}
       <div className="relative bg-gradient-to-b from-accent-blue/20 via-accent-purple/10 to-transparent pt-4 pb-8 px-4">
         <div className="absolute top-0 right-0 w-40 h-40 bg-accent-purple/10 rounded-full blur-3xl pointer-events-none" />
@@ -251,7 +307,7 @@ export default function AdminAiWorkoutGeneratorPage() {
               min="0" 
               max="100" 
               value={difficulty}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDifficulty(Number(e.target.value))}
+              onChange={(e) => setDifficulty(Number(e.target.value))}
               className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-accent-blue [&::-webkit-slider-thumb]:to-accent-purple [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-accent-blue/30"
             />
             <div className="flex justify-between text-[10px] text-white/40 mt-2">
@@ -344,13 +400,13 @@ export default function AdminAiWorkoutGeneratorPage() {
             ) : (
               <>
                 <Sparkles size={20} />
-                <span>Generate & Assign Workout</span>
+                <span>Generate Workout Plan</span>
               </>
             )}
           </GlassButton>
           
           <p className="text-center text-xs text-white/30 mt-4">
-            AI will create a personalized {daysPerWeek}-day {workoutType.toLowerCase()} program and assign to member
+            AI will create a personalized {daysPerWeek}-day {workoutType.toLowerCase()} program
           </p>
         </motion.div>
       </div>

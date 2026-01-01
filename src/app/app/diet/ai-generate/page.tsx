@@ -7,10 +7,12 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { Bot, ChevronLeft, Sparkles, Loader2, Utensils, Target, Flame, Leaf, Apple } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { motion } from 'framer-motion';
+import DietPreview from '@/components/diet/DietPreview';
 
 export default function AiDietGeneratorPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [goal, setGoal] = useState('maintain weight');
   const [mealsPerDay, setMealsPerDay] = useState(4);
@@ -18,6 +20,10 @@ export default function AiDietGeneratorPage() {
   const [activityLevel, setActivityLevel] = useState('moderate');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [foodPreference, setFoodPreference] = useState<'veg' | 'non-veg' | 'both'>('both');
+  
+  // Preview state
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadUserProfile();
@@ -53,22 +59,25 @@ export default function AiDietGeneratorPage() {
     { id: 'Gluten-free', emoji: '🌾' },
   ];
 
+  const generateParams = {
+    age: userProfile?.age,
+    gender: userProfile?.gender,
+    heightCm: userProfile?.heightCm,
+    weightKg: userProfile?.weightKg,
+    goals: [goal],
+    dietaryRestrictions: restrictions,
+    activityLevel,
+    mealsPerDay,
+    foodPreference,
+  };
+
   const handleGenerate = async () => {
     setLoading(true);
     setError('');
     try {
-      const diet = await apiClient.post('/api/v1/diets/generate-ai', {
-        age: userProfile?.age,
-        gender: userProfile?.gender,
-        heightCm: userProfile?.heightCm,
-        weightKg: userProfile?.weightKg,
-        goals: [goal],
-        dietaryRestrictions: restrictions,
-        activityLevel,
-        mealsPerDay,
-        foodPreference,
-      });
-      router.push(`/app/diet/${diet.id}`);
+      const response = await apiClient.post('/api/v1/diets/generate-ai-preview', generateParams);
+      setGeneratedContent(response);
+      setShowPreview(true);
     } catch (err: any) {
       setError(err.message || 'Failed to generate diet plan. Please try again.');
     } finally {
@@ -76,8 +85,55 @@ export default function AiDietGeneratorPage() {
     }
   };
 
+  const handleRegenerate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await apiClient.post('/api/v1/diets/generate-ai-preview', generateParams);
+      setGeneratedContent(response);
+    } catch (err: any) {
+      setError(err.message || 'Failed to regenerate diet plan.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!generatedContent) return;
+    setSaving(true);
+    try {
+      const diet = await apiClient.post('/api/v1/diets', {
+        title: generatedContent.planName || 'AI Diet Plan',
+        description: generatedContent.description,
+        content: generatedContent,
+      });
+      router.push(`/app/diet/${diet.id}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save diet plan.');
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowPreview(false);
+    setGeneratedContent(null);
+  };
+
   return (
     <div className="min-h-screen pb-24">
+      {/* Preview Modal */}
+      {showPreview && generatedContent && (
+        <DietPreview
+          content={generatedContent}
+          onConfirm={handleConfirm}
+          onRegenerate={handleRegenerate}
+          onCancel={handleCancel}
+          isConfirming={saving}
+          isRegenerating={loading}
+          confirmLabel="Save Diet Plan"
+        />
+      )}
+
       {/* Header */}
       <div className="relative bg-gradient-to-b from-green-500/20 via-emerald-500/10 to-transparent pt-4 pb-8 px-4">
         <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
-import { ChevronLeft, Utensils, Loader2, Trash2, Flame, Droplets, Clock, Sparkles, Apple, CheckCircle, Calendar } from 'lucide-react';
+import { ChevronLeft, Utensils, Loader2, Trash2, Flame, Droplets, Clock, Sparkles, Apple, User } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { motion } from 'framer-motion';
+import { useToast } from '@/lib/toast-context';
 
 interface FoodItem {
   food: string;
@@ -36,16 +37,17 @@ interface DietContent {
   tips?: string[];
 }
 
-export default function DietDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function AdminDietDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const toast = useToast();
+  const userId = searchParams.get('userId');
+  
   const [diet, setDiet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [activating, setActivating] = useState(false);
 
   useEffect(() => {
     if (id) loadDiet();
@@ -57,27 +59,9 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
       const data = await apiClient.get(`/api/v1/diets/${id}`);
       setDiet(data);
     } catch (err: any) {
-      console.error('Failed to load diet:', err);
       setError(err.message || 'Failed to load diet plan');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const activateDiet = async () => {
-    setActivating(true);
-    try {
-      await apiClient.post('/api/v1/schedules', {
-        type: 'diet',
-        dietId: id,
-        startDate
-      });
-      alert('Diet plan activated! Your meals will now appear on your dashboard.');
-      setShowScheduleModal(false);
-    } catch (err) {
-      alert('Failed to activate diet plan');
-    } finally {
-      setActivating(false);
     }
   };
 
@@ -86,9 +70,14 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
     setDeleting(true);
     try {
       await apiClient.delete(`/api/v1/diets/${diet.id}`);
-      router.push('/app/diet');
+      toast.success('Diet plan deleted successfully');
+      if (userId) {
+        router.push(`/app/admin/members/${userId}`);
+      } else {
+        router.back();
+      }
     } catch (err) {
-      alert('Failed to delete diet plan');
+      toast.error('Failed to delete diet plan');
     } finally {
       setDeleting(false);
     }
@@ -110,7 +99,7 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
         </div>
         <h2 className="text-xl font-bold mb-2 text-white">Diet Plan Not Found</h2>
         <p className="text-white/50 mb-6">{error || 'This plan may have been deleted'}</p>
-        <GlassButton onClick={() => router.push('/app/diet')}>Back to Diet Plans</GlassButton>
+        <GlassButton onClick={() => router.back()}>Go Back</GlassButton>
       </div>
     );
   }
@@ -128,22 +117,25 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
       <div className="relative bg-gradient-to-b from-green-500/20 to-transparent pt-4 pb-8 px-4">
         <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/10 rounded-full blur-3xl" />
         
-        <div className="relative z-10 flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
           <button 
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors"
+            onClick={() => userId ? router.push(`/app/admin/members/${userId}`) : router.back()}
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10"
           >
             <ChevronLeft size={20} />
           </button>
-          {!diet.isAssigned && (
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-green-400 text-xs font-bold">
+              Admin View
+            </span>
             <button 
               onClick={handleDelete}
               disabled={deleting}
-              className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors border border-red-500/20 cursor-pointer"
+              className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors border border-red-500/20"
             >
               {deleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
             </button>
-          )}
+          </div>
         </div>
 
         <div className="flex items-start gap-4">
@@ -152,13 +144,8 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="flex-1">
             {isAiGenerated && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-purple/20 border border-accent-purple/30 text-accent-purple rounded text-xs font-bold mb-2 mr-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-purple/20 border border-accent-purple/30 text-accent-purple rounded text-xs font-bold mb-2">
                 <Sparkles size={10} /> AI GENERATED
-              </span>
-            )}
-            {diet.isAssigned && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 border border-green-500/30 text-green-400 rounded text-xs font-bold mb-2">
-                <CheckCircle size={10} /> ASSIGNED BY ADMIN
               </span>
             )}
             <h1 className="text-xl font-bold mb-1 text-white">{diet.title || content.planName || 'Diet Plan'}</h1>
@@ -168,60 +155,19 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
-        {/* Activate Button */}
-        <div className="mt-6">
-          <GlassButton 
-            fullWidth 
-            onClick={() => setShowScheduleModal(true)}
-            className="!bg-green-500/20 !border-green-500/30"
-          >
-            <Calendar size={18} />
-            <span>Activate This Plan</span>
-          </GlassButton>
-        </div>
+        {/* Member Info */}
+        {diet.user && (
+          <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+              <User size={18} className="text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">{diet.user.name}</p>
+              <p className="text-xs text-white/40">{diet.user.email}</p>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Schedule Modal */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md bg-primary border border-white/10 rounded-2xl p-6"
-          >
-            <h3 className="text-xl font-bold mb-2 text-white">Activate Diet Plan</h3>
-            <p className="text-sm text-white/60 mb-6">
-              Set a start date for this diet. Your meals will appear on your dashboard for easy tracking.
-            </p>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-white/70 mb-2">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-green-500"
-              />
-            </div>
-            
-            <div className="flex gap-3">
-              <GlassButton 
-                onClick={() => setShowScheduleModal(false)}
-                className="flex-1 !bg-white/5"
-              >
-                Cancel
-              </GlassButton>
-              <GlassButton 
-                onClick={activateDiet}
-                disabled={activating}
-                className="flex-1 !bg-green-500"
-              >
-                {activating ? <Loader2 size={18} className="animate-spin" /> : 'Activate'}
-              </GlassButton>
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       <div className="px-4 space-y-4">
         {/* Macros Overview */}
@@ -265,7 +211,7 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
           <div className="space-y-3">
             <h3 className="font-bold text-lg flex items-center gap-2 text-white">
               <Apple size={18} className="text-green-400" />
-              Today's Meals
+              Daily Meals
             </h3>
             
             {allMeals.map((meal, mealIndex) => (
@@ -324,47 +270,35 @@ export default function DietDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Hydration */}
         {content.hydration && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <GlassCard className="!p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Droplets size={20} className="text-blue-400" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-white">Hydration</h4>
-                  <p className="text-xs text-white/60">{content.hydration}</p>
-                </div>
+          <GlassCard className="!p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <Droplets size={20} className="text-blue-400" />
               </div>
-            </GlassCard>
-          </motion.div>
+              <div>
+                <h4 className="font-bold text-sm text-white">Hydration</h4>
+                <p className="text-xs text-white/60">{content.hydration}</p>
+              </div>
+            </div>
+          </GlassCard>
         )}
 
         {/* Tips */}
         {content.tips && content.tips.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <GlassCard className="!p-4">
-              <h4 className="font-bold mb-3 flex items-center gap-2 text-white">
-                <Sparkles size={16} className="text-yellow-400" />
-                Pro Tips
-              </h4>
-              <ul className="space-y-2">
-                {content.tips.map((tip, i) => (
-                  <li key={i} className="text-sm text-white/70 flex items-start gap-2">
-                    <span className="text-green-400 mt-0.5">•</span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </GlassCard>
-          </motion.div>
+          <GlassCard className="!p-4">
+            <h4 className="font-bold mb-3 flex items-center gap-2 text-white">
+              <Sparkles size={16} className="text-yellow-400" />
+              Pro Tips
+            </h4>
+            <ul className="space-y-2">
+              {content.tips.map((tip, i) => (
+                <li key={i} className="text-sm text-white/70 flex items-start gap-2">
+                  <span className="text-green-400 mt-0.5">•</span>
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
         )}
 
         {/* Empty State */}

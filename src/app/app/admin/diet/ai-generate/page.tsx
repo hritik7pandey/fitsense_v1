@@ -7,6 +7,8 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { Bot, ChevronLeft, Sparkles, Loader2, Utensils, Target, Flame, Leaf, Apple, Users, User } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { motion } from 'framer-motion';
+import DietPreview from '@/components/diet/DietPreview';
+import { useToast } from '@/lib/toast-context';
 
 interface Member {
   id: string;
@@ -22,9 +24,11 @@ interface Member {
 export default function AdminAiDietGeneratorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const toast = useToast();
   const preselectedUserId = searchParams.get('userId');
   
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [goal, setGoal] = useState('maintain weight');
   const [mealsPerDay, setMealsPerDay] = useState(4);
@@ -35,6 +39,10 @@ export default function AdminAiDietGeneratorPage() {
   const [selectedMember, setSelectedMember] = useState<string>(preselectedUserId || '');
   const [selectedMemberData, setSelectedMemberData] = useState<Member | null>(null);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  
+  // Preview state
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadMembers();
@@ -85,6 +93,18 @@ export default function AdminAiDietGeneratorPage() {
     { id: 'Gluten-free', emoji: '🌾' },
   ];
 
+  const generateParams = {
+    age: selectedMemberData?.age,
+    gender: selectedMemberData?.gender,
+    heightCm: selectedMemberData?.heightCm,
+    weightKg: selectedMemberData?.weightKg,
+    goals: [goal],
+    dietaryRestrictions: restrictions,
+    activityLevel,
+    mealsPerDay,
+    foodPreference,
+  };
+
   const handleGenerate = async () => {
     if (!selectedMember) {
       setError('Please select a member first');
@@ -94,21 +114,9 @@ export default function AdminAiDietGeneratorPage() {
     setLoading(true);
     setError('');
     try {
-      const diet = await apiClient.post('/api/v1/diets/generate-ai', {
-        userId: selectedMember,
-        age: selectedMemberData?.age,
-        gender: selectedMemberData?.gender,
-        heightCm: selectedMemberData?.heightCm,
-        weightKg: selectedMemberData?.weightKg,
-        goals: [goal],
-        dietaryRestrictions: restrictions,
-        activityLevel,
-        mealsPerDay,
-        foodPreference,
-        assignToUser: true,
-      });
-      
-      router.push(`/app/admin/members/${selectedMember}`);
+      const response = await apiClient.post('/api/v1/diets/generate-ai-preview', generateParams);
+      setGeneratedContent(response);
+      setShowPreview(true);
     } catch (err: any) {
       setError(err.message || 'Failed to generate diet plan. Please try again.');
     } finally {
@@ -116,8 +124,58 @@ export default function AdminAiDietGeneratorPage() {
     }
   };
 
+  const handleRegenerate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await apiClient.post('/api/v1/diets/generate-ai-preview', generateParams);
+      setGeneratedContent(response);
+    } catch (err: any) {
+      setError(err.message || 'Failed to regenerate diet plan.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!generatedContent || !selectedMember) return;
+    setSaving(true);
+    try {
+      await apiClient.post('/api/v1/diets', {
+        title: generatedContent.planName || 'AI Diet Plan',
+        description: generatedContent.description,
+        content: generatedContent,
+        userId: selectedMember,
+        assignToUser: true,
+      });
+      toast.success('Diet plan generated and assigned successfully!');
+      router.push(`/app/admin/members/${selectedMember}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save diet plan.');
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowPreview(false);
+    setGeneratedContent(null);
+  };
+
   return (
     <div className="min-h-screen pb-24">
+      {/* Preview Modal */}
+      {showPreview && generatedContent && (
+        <DietPreview
+          content={generatedContent}
+          onConfirm={handleConfirm}
+          onRegenerate={handleRegenerate}
+          onCancel={handleCancel}
+          isConfirming={saving}
+          isRegenerating={loading}
+          confirmLabel="Assign to Member"
+        />
+      )}
+
       {/* Header */}
       <div className="relative bg-gradient-to-b from-green-500/20 via-emerald-500/10 to-transparent pt-4 pb-8 px-4">
         <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -382,13 +440,13 @@ export default function AdminAiDietGeneratorPage() {
             ) : (
               <>
                 <Sparkles size={20} />
-                <span>Generate & Assign Diet</span>
+                <span>Generate Diet Plan</span>
               </>
             )}
           </GlassButton>
           
           <p className="text-center text-xs text-white/30 mt-4">
-            AI will create a personalized {mealsPerDay}-meal Indian diet plan and assign to member
+            AI will create a personalized {mealsPerDay}-meal Indian diet plan
           </p>
         </motion.div>
       </div>
