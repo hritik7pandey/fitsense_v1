@@ -5,12 +5,11 @@ import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassButton } from '@/components/ui/GlassButton';
-import { ChevronLeft, User, Mail, Phone, Ruler, Weight, Calendar, Loader2, CheckCircle, Camera, Upload } from 'lucide-react';
+import { ChevronLeft, User, Mail, Phone, Ruler, Weight, Calendar, Loader2, CheckCircle, Camera } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import { DEFAULT_AVATAR } from '@/lib/constants';
 import { uploadAvatar } from '@/lib/supabase';
-import { motion } from 'framer-motion';
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -159,33 +158,22 @@ export default function EditProfilePage() {
       <div className="px-4 -mt-4">
         {/* Success Message */}
         {success && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3"
-          >
+          <div className="mb-4 p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3">
             <CheckCircle size={20} />
             <span className="text-sm font-medium">Profile updated successfully!</span>
-          </motion.div>
+          </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
-          >
+          <div className="mb-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {error}
-          </motion.div>
+          </div>
         )}
 
         <form onSubmit={handleSubmit}>
           {/* Profile Picture Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <div>
             <GlassCard className="!p-5 mb-4">
               <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4">Profile Picture</h3>
               
@@ -250,14 +238,10 @@ export default function EditProfilePage() {
                 </div>
               </div>
             </GlassCard>
-          </motion.div>
+          </div>
 
           {/* Basic Information */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             <GlassCard className="!p-5 space-y-1">
               <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4">Basic Information</h3>
               
@@ -288,15 +272,10 @@ export default function EditProfilePage() {
                 placeholder="+91 9876543210"
               />
             </GlassCard>
-          </motion.div>
+          </div>
 
           {/* Physical Details */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-4"
-          >
+          <div className="mt-4">
             <GlassCard className="!p-5 space-y-1">
               <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4">Physical Details</h3>
               
@@ -352,15 +331,10 @@ export default function EditProfilePage() {
                 </div>
               </div>
             </GlassCard>
-          </motion.div>
+          </div>
 
           {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 flex gap-3"
-          >
+          <div className="mt-6 flex gap-3">
             <GlassButton
               type="button"
               variant="glass"
@@ -383,7 +357,7 @@ export default function EditProfilePage() {
                 'Save Changes'
               )}
             </GlassButton>
-          </motion.div>
+          </div>
         </form>
       </div>
     </div>
