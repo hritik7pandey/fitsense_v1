@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GlassInput, GlassButton } from '@/components/ui';
 import { Mail, ChevronLeft, Sparkles, AlertCircle, Clock, ShieldX } from 'lucide-react';
@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -244,5 +244,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-primary"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-blue"></div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
